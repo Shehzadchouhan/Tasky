@@ -1,0 +1,322 @@
+/* CSS Variables for Reusability */
+:root {
+  --bg-gradient: linear-gradient(135deg, #1e1e2f, #252538);
+  --text-light: #fff;
+  --text-muted: #ccc;
+  --text-faded: #aaa;
+  --text-blink: #666;
+  --btn-color: #6c63ff;
+  --btn-hover: #5750d6;
+  --delete-color: #ff4d4d;
+  --delete-hover: #c0392b;
+  --success: #28a745;
+  --input-bg: rgba(255, 255, 255, 0.2);
+  --input-focus: rgba(255, 255, 255, 0.4);
+  --task-bg: rgba(255, 255, 255, 0.07);
+  --task-hover: rgba(0, 0, 0, 0.1);
+  --task-shadow: rgba(0, 0, 0, 0.2);
+  --feedback-bg: #2a2a3b;
+}
+
+/* General Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg-gradient);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  color: var(--text-light);
+  padding: 20px;
+  text-align: center;
+}
+
+/* Heading */
+.heading-container {
+  margin-bottom: 21px;
+}
+
+h1 {
+  font-size: 2.5em;
+  margin-bottom: 2px;
+}
+
+.quote {
+  font-size: 1.2em;
+  font-style: italic;
+  color: var(--text-muted);
+  margin-top: 10px;
+  white-space: pre;
+  display: inline-block;
+}
+
+.quote::after {
+  content: '|';
+  animation: blink 1s infinite;
+  margin-left: 5px;
+  color: var(--text-blink);
+}
+
+@keyframes blink {
+
+  0%,
+  50%,
+  100% {
+    opacity: 1;
+  }
+
+  25%,
+  75% {
+    opacity: 0;
+  }
+}
+
+/* Blossom Container */
+.blossom-container {
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 20px;
+  max-width: 600px;
+  width: 100%;
+  animation: blossomEffect 1.5s ease-in-out;
+  box-shadow: 0 6px 15px var(--task-shadow);
+}
+
+/* Input Section */
+.input-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+}
+
+input[type="text"],
+input[type="date"],
+select,
+button {
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 1em;
+  border: none;
+  outline: none;
+  transition: 0.3s ease;
+}
+
+input[type="text"],
+input[type="date"],
+select {
+  background: var(--input-bg);
+  color: var(--text-light);
+}
+
+input:focus,
+select:focus,
+button:focus {
+  outline: 2px solid var(--btn-color);
+  outline-offset: 2px;
+}
+
+button {
+  background-color: var(--btn-color);
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--btn-hover);
+}
+
+/* Task List */
+ul#taskList {
+  list-style: none;
+  width: 100%;
+  margin-top: 20px;
+  padding: 0;
+}
+
+ul#taskList li {
+  background: var(--task-bg);
+  padding: 15px;
+  width: 1309px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  animation: fadeIn 0.3s ease-in-out;
+  box-shadow: 0 4px 8px var(--task-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+ul#taskList li:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+ul#taskList li.completed {
+  text-decoration: line-through;
+  color: var(--text-faded);
+}
+
+ul#taskList li button {
+  background: transparent;
+  color: var(--delete-color);
+  font-size: 1.5em;
+  border: none;
+  cursor: pointer;
+}
+
+ul#taskList li button:hover {
+  color: var(--delete-hover);
+}
+
+/* Empty Message */
+#emptyMessage {
+  margin-top: 20px;
+  font-style: italic;
+  color: var(--text-faded);
+  font-size: 1.1em;
+}
+
+/* Editable Inputs & Save Button */
+.edit-text,
+.edit-date,
+.edit-category {
+  padding: 8px;
+  border-radius: 8px;
+  margin-right: 8px;
+  font-size: 1em;
+  border: none;
+}
+
+.save-btn {
+  background-color: var(--success);
+  color: white;
+  font-size: 1.2em;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blossomEffect {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .input-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  input,
+  select,
+  button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+}
+
+#categorySelect option {
+  background-color: #1e1e2f;
+  color: white;
+}
+
+/* Feedback Button */
+#feedbackBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #7e77f6;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 999;
+}
+
+/* Feedback Form Popup */
+#feedbackForm {
+  color: #6c63ff;
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 300px;
+  background: var(--feedback-bg);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  display: none;
+  z-index: 998;
+}
+
+#feedbackForm h3 {
+  margin-top: 0;
+  font-size: 18px;
+}
+
+#feedbackForm input,
+#feedbackForm textarea {
+  color: black;
+  background-color: white;
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+#feedbackForm button {
+  width: 100%;
+  background-color: var(--btn-color);
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#feedbackForm button:hover {
+  background-color: var(--btn-hover);
+}
