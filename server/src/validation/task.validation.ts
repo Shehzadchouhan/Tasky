@@ -45,7 +45,6 @@ export const createTaskSchema = z
     dueDate: z
       .preprocess((val) => (val === '' ? null : val), z.coerce.date().nullable().optional())
       .default(null),
-    order: z.number().int().optional().default(0),
   })
   .strict();
 
@@ -74,12 +73,27 @@ export const updateTaskSchema = z
       .optional(),
     dueDate: z
       .preprocess((val) => (val === '' ? null : val), z.coerce.date().nullable().optional()),
-    order: z.number().int().optional(),
   })
   .strict()
   .refine((data) => Object.keys(data).length > 0, {
     message: 'Request body cannot be empty',
   });
+
+export const reorderTasksSchema = z
+  .object({
+    status: z.enum(['todo', 'in-progress', 'done'] as const),
+    orderedIds: z
+      .array(
+        z.string().refine(isValidObjectId, {
+          message: 'Invalid task ID',
+        })
+      )
+      .max(200, 'Cannot reorder more than 200 tasks')
+      .refine((ids) => new Set(ids).size === ids.length, {
+        message: 'Task IDs must be unique',
+      }),
+  })
+  .strict();
 
 export const taskQuerySchema = z
   .object({
@@ -87,7 +101,7 @@ export const taskQuerySchema = z
     category: z.enum(['Work', 'Home', 'Personal', 'Urgent', 'none'] as const).optional(),
     priority: z.enum(['low', 'medium', 'high'] as const).optional(),
     search: z.string().trim().optional(),
-    sort: z.enum(['dueDate', 'createdAt', 'priority'] as const).optional().default('createdAt'),
+    sort: z.enum(['dueDate', 'createdAt', 'priority', 'order'] as const).optional().default('createdAt'),
     order: z.enum(['asc', 'desc'] as const).optional().default('desc'),
     page: z.coerce.number().int().min(1).optional().default(1),
     limit: z.coerce.number().int().min(1).max(50, 'Limit cannot exceed 50').optional().default(10),
@@ -96,4 +110,5 @@ export const taskQuerySchema = z
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+export type ReorderTasksInput = z.infer<typeof reorderTasksSchema>;
 export type TaskQueryInput = z.infer<typeof taskQuerySchema>;

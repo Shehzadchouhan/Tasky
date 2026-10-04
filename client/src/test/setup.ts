@@ -15,4 +15,26 @@ if (typeof window !== 'undefined') {
       dispatchEvent: () => false,
     }),
   });
+
+  if (!window.ResizeObserver) {
+    window.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
+
+  if (!window.IntersectionObserver) {
+    window.IntersectionObserver = class IntersectionObserver {
+      root = null;
+      rootMargin = '';
+      thresholds = [];
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    } as any;
+  }
 }

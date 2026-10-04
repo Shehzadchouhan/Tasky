@@ -35,8 +35,18 @@ export interface UpdateTaskInput {
   dueDate?: string | null;
 }
 
-export type TaskSortField = 'createdAt' | 'dueDate' | 'priority';
+export type TaskSortField = 'createdAt' | 'dueDate' | 'priority' | 'order';
 export type SortOrder = 'asc' | 'desc';
+export type TaskViewMode = 'list' | 'board';
+
+export interface ReorderTasksInput {
+  status: TaskStatus;
+  orderedIds: string[];
+}
+
+export interface ReorderTasksResponse {
+  message: string;
+}
 
 export interface TaskQueryParams {
   status?: TaskStatus;

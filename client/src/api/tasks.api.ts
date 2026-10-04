@@ -2,6 +2,8 @@ import { apiClient } from './client.ts';
 import type {
   CreateTaskInput,
   DeleteTaskResponse,
+  ReorderTasksInput,
+  ReorderTasksResponse,
   SingleTaskResponse,
   TaskQueryParams,
   TasksResponse,
@@ -65,6 +67,13 @@ export const tasksApi = {
   deleteTask: async (id: string): Promise<DeleteTaskResponse> => {
     return apiClient<DeleteTaskResponse>(`/tasks/${id}`, {
       method: 'DELETE',
+    });
+  },
+
+  reorderTasks: async (data: ReorderTasksInput): Promise<ReorderTasksResponse> => {
+    return apiClient<ReorderTasksResponse>('/tasks/reorder', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };

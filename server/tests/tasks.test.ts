@@ -44,6 +44,11 @@ describe('Tasks API & Security (/api/tasks)', () => {
 
       const deleteRes = await request(app).delete('/api/tasks/507f1f77bcf86cd799439011');
       expect(deleteRes.status).toBe(401);
+
+      const reorderRes = await request(app)
+        .post('/api/tasks/reorder')
+        .send({ status: 'todo', orderedIds: [] });
+      expect(reorderRes.status).toBe(401);
     });
   });
 
@@ -97,6 +102,34 @@ describe('Tasks API & Security (/api/tasks)', () => {
         });
 
       expect(resExtra.status).toBe(400);
+    });
+
+    it('should return 400 when attempting to set order directly on POST or PATCH', async () => {
+      const postWithOrder = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({
+          title: 'Direct Order Task',
+          order: 99,
+        });
+
+      expect(postWithOrder.status).toBe(400);
+
+      const createRes = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task for patch order test' });
+
+      const taskId = createRes.body.task.id || createRes.body.task._id;
+
+      const patchWithOrder = await request(app)
+        .patch(`/api/tasks/${taskId}`)
+        .set('Cookie', [userACookie])
+        .send({
+          order: 42,
+        });
+
+      expect(patchWithOrder.status).toBe(400);
     });
 
     it('should return 400 on PATCH with an empty body', async () => {
@@ -191,7 +224,6 @@ describe('Tasks API & Security (/api/tasks)', () => {
           priority: 'high',
           status: 'in-progress',
           dueDate: dueDate.toISOString(),
-          order: 3,
         });
 
       expect(res.status).toBe(201);
@@ -203,7 +235,7 @@ describe('Tasks API & Security (/api/tasks)', () => {
       expect(res.body.task.status).toBe('in-progress');
       expect(new Date(res.body.task.dueDate).toISOString()).toBe(dueDate.toISOString());
       expect(res.body.task.hasDueDate).toBe(true);
-      expect(res.body.task.order).toBe(3);
+      expect(res.body.task.order).toBe(0);
     });
 
     it('should read a task by ID', async () => {
@@ -526,6 +558,225 @@ describe('Tasks API & Security (/api/tasks)', () => {
       // Verify all 10 unique tasks are covered
       const allIds = new Set([...page1Ids, ...page2Ids]);
       expect(allIds.size).toBe(10);
+    });
+
+    it('should sort by order with _id tiebreaker when sort=order is requested', async () => {
+      await Task.deleteMany({});
+
+      const t1 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task 1', status: 'todo' });
+
+      const t2 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task 2', status: 'todo' });
+
+      const t1Id = t1.body.task.id;
+      const t2Id = t2.body.task.id;
+
+      // Reverse their order via reorder endpoint
+      await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userACookie])
+        .send({
+          status: 'todo',
+          orderedIds: [t2Id, t1Id],
+        });
+
+      const getRes = await request(app)
+        .get('/api/tasks?sort=order&order=asc')
+        .set('Cookie', [userACookie]);
+
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.tasks[0].id).toBe(t2Id);
+      expect(getRes.body.tasks[0].order).toBe(0);
+      expect(getRes.body.tasks[1].id).toBe(t1Id);
+      expect(getRes.body.tasks[1].order).toBe(1);
+    });
+  });
+
+  describe('Task Reordering & Board Support (/api/tasks/reorder)', () => {
+    it('should automatically assign order to new tasks at the end of their column', async () => {
+      await Task.deleteMany({});
+
+      const t1 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Todo 1', status: 'todo' });
+
+      const t2 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Todo 2', status: 'todo' });
+
+      const prog1 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Progress 1', status: 'in-progress' });
+
+      expect(t1.body.task.order).toBe(0);
+      expect(t2.body.task.order).toBe(1);
+      expect(prog1.body.task.order).toBe(0);
+    });
+
+    it('should assign order to next slot at end of new column when status changes via PATCH', async () => {
+      await Task.deleteMany({});
+
+      // Create 2 existing tasks in "done" column (order 0 and 1)
+      await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Done 1', status: 'done' });
+      await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Done 2', status: 'done' });
+
+      // Create a task in "todo" column (order 0)
+      const todoRes = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Moving to Done', status: 'todo' });
+
+      const taskId = todoRes.body.task.id;
+
+      // Update task to "done"
+      const patchRes = await request(app)
+        .patch(`/api/tasks/${taskId}`)
+        .set('Cookie', [userACookie])
+        .send({ status: 'done' });
+
+      expect(patchRes.status).toBe(200);
+      expect(patchRes.body.task.status).toBe('done');
+      expect(patchRes.body.task.order).toBe(2);
+    });
+
+    it('should reorder tasks within a column and update their order values', async () => {
+      await Task.deleteMany({});
+
+      const t1 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task A', status: 'todo' });
+
+      const t2 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task B', status: 'todo' });
+
+      const t3 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task C', status: 'todo' });
+
+      const idA = t1.body.task.id;
+      const idB = t2.body.task.id;
+      const idC = t3.body.task.id;
+
+      const reorderRes = await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userACookie])
+        .send({
+          status: 'todo',
+          orderedIds: [idC, idA, idB],
+        });
+
+      expect(reorderRes.status).toBe(200);
+      expect(reorderRes.body.message).toBe('Tasks reordered successfully');
+
+      const fetchRes = await request(app)
+        .get('/api/tasks?sort=order&order=asc')
+        .set('Cookie', [userACookie]);
+
+      expect(fetchRes.body.tasks.map((t: any) => t.id)).toEqual([idC, idA, idB]);
+      expect(fetchRes.body.tasks.map((t: any) => t.order)).toEqual([0, 1, 2]);
+    });
+
+    it('should change status and reorder when moving tasks across columns', async () => {
+      await Task.deleteMany({});
+
+      const t1 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task 1', status: 'todo' });
+
+      const id1 = t1.body.task.id;
+
+      const reorderRes = await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userACookie])
+        .send({
+          status: 'in-progress',
+          orderedIds: [id1],
+        });
+
+      expect(reorderRes.status).toBe(200);
+
+      const checkTask = await request(app)
+        .get(`/api/tasks/${id1}`)
+        .set('Cookie', [userACookie]);
+
+      expect(checkTask.body.task.status).toBe('in-progress');
+      expect(checkTask.body.task.order).toBe(0);
+    });
+
+    it('should return 404 when User B attempts to reorder User A tasks', async () => {
+      await Task.deleteMany({});
+
+      const t1 = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'User A Task', status: 'todo' });
+
+      const userATaskId = t1.body.task.id;
+
+      const userBReorder = await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userBCookie])
+        .send({
+          status: 'done',
+          orderedIds: [userATaskId],
+        });
+
+      expect(userBReorder.status).toBe(404);
+      expect(userBReorder.body.error).toBe('Task not found');
+    });
+
+    it('should return 400 for invalid, duplicate, or excessive IDs, or unknown body properties', async () => {
+      // Invalid ObjectId
+      const resInvalid = await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userACookie])
+        .send({
+          status: 'todo',
+          orderedIds: ['not-an-objectid'],
+        });
+      expect(resInvalid.status).toBe(400);
+
+      // Duplicate ObjectIds
+      const validId = '507f1f77bcf86cd799439011';
+      const resDup = await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userACookie])
+        .send({
+          status: 'todo',
+          orderedIds: [validId, validId],
+        });
+      expect(resDup.status).toBe(400);
+      expect(resDup.body.error).toMatch(/unique/i);
+
+      // Unknown property (.strict check)
+      const resExtra = await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userACookie])
+        .send({
+          status: 'todo',
+          orderedIds: [],
+          unexpected: true,
+        });
+      expect(resExtra.status).toBe(400);
     });
   });
 });

@@ -6,6 +6,7 @@ import {
   getTaskById,
   updateTask,
   deleteTask,
+  reorderTasks,
 } from '../controllers/task.controller.js';
 
 const router = Router();
@@ -14,6 +15,7 @@ const router = Router();
 router.use(requireAuth);
 
 router.post('/', createTask);
+router.post('/reorder', reorderTasks);
 router.get('/', getTasks);
 router.get('/:id', getTaskById);
 router.patch('/:id', updateTask);

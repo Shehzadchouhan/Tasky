@@ -9,6 +9,7 @@ import { DeleteConfirmModal } from '../components/tasks/DeleteConfirmModal.tsx';
 import { TaskControls } from '../components/tasks/TaskControls.tsx';
 import { TaskPagination } from '../components/tasks/TaskPagination.tsx';
 import { EmptyState } from '../components/tasks/EmptyState.tsx';
+import { KanbanBoard } from '../components/tasks/KanbanBoard.tsx';
 import { useTasksQuery, useCreateTask, useUpdateTask, useDeleteTask } from '../hooks/useTasks.ts';
 import { useDebounce } from '../hooks/useDebounce.ts';
 import { useToast } from '../hooks/useToast.ts';
@@ -20,6 +21,7 @@ import type {
   TaskQueryParams,
   TaskSortField,
   TaskStatus,
+  TaskViewMode,
   SortOrder,
   UpdateTaskInput,
 } from '../types/task.types.ts';
@@ -31,6 +33,7 @@ export function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Extract query params from URL
+  const viewParam = (searchParams.get('view') as TaskViewMode) || 'list';
   const statusParam = (searchParams.get('status') as TaskStatus | 'all') || 'all';
   const categoryParam = (searchParams.get('category') as TaskCategory | 'all') || 'all';
   const priorityParam = (searchParams.get('priority') as TaskPriority | 'all') || 'all';
@@ -75,6 +78,8 @@ export function DashboardPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
+  const isBoardView = viewParam === 'board';
+
   // Helper to update URL params and reset page to 1
   const updateFilter = (key: string, value: string | null) => {
     setSearchParams(
@@ -86,6 +91,21 @@ export function DashboardPage() {
           next.delete(key);
         }
         next.set('page', '1');
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const handleViewChange = (newView: TaskViewMode) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (newView === 'board') {
+          next.set('view', 'board');
+        } else {
+          next.delete('view');
+        }
         return next;
       },
       { replace: true }
@@ -117,7 +137,17 @@ export function DashboardPage() {
 
   const handleResetFilters = () => {
     setSearchInput('');
-    setSearchParams(new URLSearchParams(), { replace: true });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams();
+        const currentView = prev.get('view');
+        if (currentView === 'board') {
+          next.set('view', 'board');
+        }
+        return next;
+      },
+      { replace: true }
+    );
   };
 
   const hasActiveFilters = Boolean(
@@ -129,7 +159,7 @@ export function DashboardPage() {
       orderParam !== 'desc'
   );
 
-  // TanStack Query parameters
+  // TanStack Query parameters (used for List view)
   const queryParams: TaskQueryParams = useMemo(() => {
     return {
       status: statusParam === 'all' ? undefined : statusParam,
@@ -143,7 +173,9 @@ export function DashboardPage() {
     };
   }, [statusParam, categoryParam, priorityParam, searchUrlParam, sortParam, orderParam, pageParam]);
 
-  const { data, isLoading, isError, error, refetch } = useTasksQuery(queryParams);
+  const { data, isLoading, isError, error, refetch } = useTasksQuery(queryParams, {
+    enabled: !isBoardView,
+  });
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
   const deleteTaskMutation = useDeleteTask();
@@ -242,10 +274,27 @@ export function DashboardPage() {
         onOrderToggle={handleOrderToggle}
         onResetFilters={handleResetFilters}
         hasActiveFilters={hasActiveFilters}
+        view={viewParam}
+        onViewChange={handleViewChange}
       />
 
       {/* Main Content Area */}
-      {isLoading ? (
+      {isBoardView ? (
+        <KanbanBoard
+          category={categoryParam}
+          priority={priorityParam}
+          search={searchUrlParam}
+          onToggleDone={handleToggleDone}
+          onEdit={(t) => {
+            setTaskToEdit(t);
+            setIsTaskModalOpen(true);
+          }}
+          onDelete={(t) => {
+            setTaskToDelete(t);
+            setIsDeleteModalOpen(true);
+          }}
+        />
+      ) : isLoading ? (
         <div className="flex flex-col gap-3 my-2" data-testid="tasks-loading">
           <TaskSkeleton />
           <TaskSkeleton />

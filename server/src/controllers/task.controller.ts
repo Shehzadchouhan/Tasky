@@ -5,6 +5,7 @@ import {
   updateTaskSchema,
   taskQuerySchema,
   taskIdParamSchema,
+  reorderTasksSchema,
   escapeRegex,
 } from '../validation/task.validation.js';
 import { AppError } from '../errors/AppError.js';
@@ -22,11 +23,23 @@ export const createTask = async (
     const validatedData = createTaskSchema.parse(req.body);
     const priorityRank = PRIORITY_RANKS[validatedData.priority as TaskPriority] || 2;
     const hasDueDate = Boolean(validatedData.dueDate);
+    const status = validatedData.status || 'todo';
+
+    const lastTask = await Task.findOne({
+      user: req.user._id,
+      status,
+    })
+      .sort({ order: -1 })
+      .select('order');
+
+    const order = lastTask !== null && typeof lastTask.order === 'number' ? lastTask.order + 1 : 0;
 
     const task = await Task.create({
       ...validatedData,
+      status,
       priorityRank,
       hasDueDate,
+      order,
       user: req.user._id,
     });
 
@@ -76,6 +89,11 @@ export const getTasks = async (
       sortOptions = {
         hasDueDate: -1,
         dueDate: sortDir,
+        _id: sortDir,
+      };
+    } else if (query.sort === 'order') {
+      sortOptions = {
+        order: sortDir,
         _id: sortDir,
       };
     } else if (query.sort === 'priority') {
@@ -154,6 +172,15 @@ export const updateTask = async (
     const { id } = taskIdParamSchema.parse(req.params);
     const validatedData = updateTaskSchema.parse(req.body);
 
+    const existingTask = await Task.findOne({
+      _id: id,
+      user: req.user._id,
+    });
+
+    if (!existingTask) {
+      throw new AppError('Task not found', 404);
+    }
+
     const updatePayload: Record<string, any> = { ...validatedData };
 
     if (validatedData.priority) {
@@ -162,6 +189,20 @@ export const updateTask = async (
 
     if ('dueDate' in validatedData) {
       updatePayload.hasDueDate = Boolean(validatedData.dueDate);
+    }
+
+    if (validatedData.status && validatedData.status !== existingTask.status) {
+      const lastTaskInNewCol = await Task.findOne({
+        user: req.user._id,
+        status: validatedData.status,
+      })
+        .sort({ order: -1 })
+        .select('order');
+
+      updatePayload.order =
+        lastTaskInNewCol !== null && typeof lastTaskInNewCol.order === 'number'
+          ? lastTaskInNewCol.order + 1
+          : 0;
     }
 
     const task = await Task.findOneAndUpdate(
@@ -177,10 +218,6 @@ export const updateTask = async (
         runValidators: true,
       }
     );
-
-    if (!task) {
-      throw new AppError('Task not found', 404);
-    }
 
     res.status(200).json({ task });
   } catch (error) {
@@ -211,6 +248,47 @@ export const deleteTask = async (
 
     res.status(200).json({
       message: 'Task deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const reorderTasks = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new AppError('Authentication required', 401);
+    }
+
+    const userId = req.user._id;
+    const { status, orderedIds } = reorderTasksSchema.parse(req.body);
+
+    if (orderedIds.length > 0) {
+      const userTasks = await Task.find({
+        _id: { $in: orderedIds },
+        user: userId,
+      }).select('_id');
+
+      if (userTasks.length !== orderedIds.length) {
+        throw new AppError('Task not found', 404);
+      }
+
+      const operations = orderedIds.map((id, index) => ({
+        updateOne: {
+          filter: { _id: id, user: userId },
+          update: { $set: { status, order: index } },
+        },
+      }));
+
+      await Task.bulkWrite(operations);
+    }
+
+    res.status(200).json({
+      message: 'Tasks reordered successfully',
     });
   } catch (error) {
     next(error);

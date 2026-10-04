@@ -1,5 +1,12 @@
-import { Search, ArrowUpDown, X } from 'lucide-react';
-import type { TaskCategory, TaskPriority, TaskSortField, TaskStatus, SortOrder } from '../../types/task.types.ts';
+import { Search, ArrowUpDown, X, LayoutList, Columns3 } from 'lucide-react';
+import type {
+  TaskCategory,
+  TaskPriority,
+  TaskSortField,
+  TaskStatus,
+  SortOrder,
+  TaskViewMode,
+} from '../../types/task.types.ts';
 
 interface TaskControlsProps {
   search: string;
@@ -16,6 +23,8 @@ interface TaskControlsProps {
   onOrderToggle: () => void;
   onResetFilters: () => void;
   hasActiveFilters: boolean;
+  view: TaskViewMode;
+  onViewChange: (view: TaskViewMode) => void;
 }
 
 export function TaskControls({
@@ -33,10 +42,14 @@ export function TaskControls({
   onOrderToggle,
   onResetFilters,
   hasActiveFilters,
+  view,
+  onViewChange,
 }: TaskControlsProps) {
+  const isBoardView = view === 'board';
+
   return (
     <div className="w-full flex flex-col gap-3.5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs">
-      {/* Top Row: Search and Sort Order */}
+      {/* Top Row: Search, View Toggle, and Sort Controls */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         {/* Search Input */}
         <div className="relative flex-1">
@@ -67,53 +80,97 @@ export function TaskControls({
           )}
         </div>
 
-        {/* Sort Field & Order Toggle */}
-        <div className="flex items-center gap-2">
-          <label htmlFor="task-sort-select" className="sr-only">
-            Sort by
-          </label>
-          <select
-            id="task-sort-select"
-            value={sort}
-            onChange={(e) => onSortChange(e.target.value as TaskSortField)}
-            className="px-3 py-2 rounded-xl text-sm bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:border-[#6c63ff] focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 cursor-pointer"
-          >
-            <option value="createdAt">Date Created</option>
-            <option value="dueDate">Due Date</option>
-            <option value="priority">Priority</option>
-          </select>
-
+        {/* View Toggle (List vs Board) */}
+        <div
+          role="group"
+          aria-label="View mode toggle"
+          className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 shrink-0"
+        >
           <button
             type="button"
-            onClick={onOrderToggle}
-            aria-label={`Sort order: currently ${order === 'asc' ? 'ascending' : 'descending'}. Click to toggle.`}
-            className="p-2 rounded-xl bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]"
-            title={`Sort order: ${order.toUpperCase()}`}
+            data-testid="view-toggle-list"
+            onClick={() => onViewChange('list')}
+            aria-pressed={view === 'list'}
+            aria-label="List view"
+            title="List view"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              view === 'list'
+                ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
           >
-            <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
+            <LayoutList className="w-4 h-4" aria-hidden="true" />
+            <span>List</span>
+          </button>
+          <button
+            type="button"
+            data-testid="view-toggle-board"
+            onClick={() => onViewChange('board')}
+            aria-pressed={view === 'board'}
+            aria-label="Board view"
+            title="Board view"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              view === 'board'
+                ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Columns3 className="w-4 h-4" aria-hidden="true" />
+            <span>Board</span>
           </button>
         </div>
+
+        {/* Sort Field & Order Toggle (Shown in List view) */}
+        {!isBoardView && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="task-sort-select" className="sr-only">
+              Sort by
+            </label>
+            <select
+              id="task-sort-select"
+              value={sort}
+              onChange={(e) => onSortChange(e.target.value as TaskSortField)}
+              className="px-3 py-2 rounded-xl text-sm bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:border-[#6c63ff] focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 cursor-pointer"
+            >
+              <option value="createdAt">Date Created</option>
+              <option value="dueDate">Due Date</option>
+              <option value="priority">Priority</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={onOrderToggle}
+              aria-label={`Sort order: currently ${order === 'asc' ? 'ascending' : 'descending'}. Click to toggle.`}
+              className="p-2 rounded-xl bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]"
+              title={`Sort order: ${order.toUpperCase()}`}
+            >
+              <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Bottom Row: Filter Dropdowns and Reset */}
       <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-slate-100 dark:border-white/5">
-        {/* Status Filter */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-          <label htmlFor="status-filter" className="font-medium shrink-0">
-            Status:
-          </label>
-          <select
-            id="status-filter"
-            value={status}
-            onChange={(e) => onStatusChange(e.target.value as TaskStatus | 'all')}
-            className="px-2.5 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 cursor-pointer"
-          >
-            <option value="all">All</option>
-            <option value="todo">To Do</option>
-            <option value="in-progress">In Progress</option>
-            <option value="done">Done</option>
-          </select>
-        </div>
+        {/* Status Filter (Hidden in Board View per Requirement 7) */}
+        {!isBoardView && (
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <label htmlFor="status-filter" className="font-medium shrink-0">
+              Status:
+            </label>
+            <select
+              id="status-filter"
+              value={status}
+              onChange={(e) => onStatusChange(e.target.value as TaskStatus | 'all')}
+              className="px-2.5 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 cursor-pointer"
+            >
+              <option value="all">All</option>
+              <option value="todo">To Do</option>
+              <option value="in-progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+        )}
 
         {/* Category Filter */}
         <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
