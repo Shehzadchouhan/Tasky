@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
-import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { AppError } from '../errors/AppError.js';
+
+const { JsonWebTokenError, TokenExpiredError } = jwt;
 
 interface MongoDuplicateKeyError extends Error {
   code: number;
