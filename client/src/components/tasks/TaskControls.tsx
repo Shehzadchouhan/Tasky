@@ -1,4 +1,4 @@
-import { Search, ArrowUpDown, X, LayoutList, Columns3 } from 'lucide-react';
+import { Search, ArrowUpDown, X, LayoutList, Columns3, BarChart3 } from 'lucide-react';
 import type {
   TaskCategory,
   TaskPriority,
@@ -46,6 +46,76 @@ export function TaskControls({
   onViewChange,
 }: TaskControlsProps) {
   const isBoardView = view === 'board';
+  const isStatsView = view === 'stats';
+
+  const viewToggleGroup = (
+    <div
+      role="group"
+      aria-label="View mode toggle"
+      className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 shrink-0"
+    >
+      <button
+        type="button"
+        data-testid="view-toggle-list"
+        onClick={() => onViewChange('list')}
+        aria-pressed={view === 'list'}
+        aria-label="List view"
+        title="List view"
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          view === 'list'
+            ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+        }`}
+      >
+        <LayoutList className="w-4 h-4" aria-hidden="true" />
+        <span>List</span>
+      </button>
+      <button
+        type="button"
+        data-testid="view-toggle-board"
+        onClick={() => onViewChange('board')}
+        aria-pressed={view === 'board'}
+        aria-label="Board view"
+        title="Board view"
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          view === 'board'
+            ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+        }`}
+      >
+        <Columns3 className="w-4 h-4" aria-hidden="true" />
+        <span>Board</span>
+      </button>
+      <button
+        type="button"
+        data-testid="view-toggle-stats"
+        onClick={() => onViewChange('stats')}
+        aria-pressed={view === 'stats'}
+        aria-label="Stats view"
+        title="Stats view"
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          view === 'stats'
+            ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+        }`}
+      >
+        <BarChart3 className="w-4 h-4" aria-hidden="true" />
+        <span>Stats</span>
+      </button>
+    </div>
+  );
+
+  if (isStatsView) {
+    return (
+      <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs">
+        <div>
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Analytics & Insights</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Track task completion trends and performance breakdown</p>
+        </div>
+        {viewToggleGroup}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-3.5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs">
@@ -80,45 +150,8 @@ export function TaskControls({
           )}
         </div>
 
-        {/* View Toggle (List vs Board) */}
-        <div
-          role="group"
-          aria-label="View mode toggle"
-          className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 shrink-0"
-        >
-          <button
-            type="button"
-            data-testid="view-toggle-list"
-            onClick={() => onViewChange('list')}
-            aria-pressed={view === 'list'}
-            aria-label="List view"
-            title="List view"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              view === 'list'
-                ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <LayoutList className="w-4 h-4" aria-hidden="true" />
-            <span>List</span>
-          </button>
-          <button
-            type="button"
-            data-testid="view-toggle-board"
-            onClick={() => onViewChange('board')}
-            aria-pressed={view === 'board'}
-            aria-label="Board view"
-            title="Board view"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              view === 'board'
-                ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Columns3 className="w-4 h-4" aria-hidden="true" />
-            <span>Board</span>
-          </button>
-        </div>
+        {/* View Toggle (List vs Board vs Stats) */}
+        {viewToggleGroup}
 
         {/* Sort Field & Order Toggle (Shown in List view) */}
         {!isBoardView && (

@@ -108,7 +108,35 @@ export const taskQuerySchema = z
   })
   .strict();
 
+const isValidIANATimezone = (tz: string): boolean => {
+  if (!tz || typeof tz !== 'string') return false;
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const taskStatsQuerySchema = z
+  .object({
+    tz: z
+      .string('Timezone is required')
+      .min(1, 'Timezone is required')
+      .refine(isValidIANATimezone, {
+        message: 'Invalid IANA timezone',
+      }),
+    days: z.preprocess(
+      (val) => (val === undefined ? 7 : Number(val)),
+      z.union([z.literal(7), z.literal(14), z.literal(30)], {
+        message: 'Days must be 7, 14, or 30',
+      })
+    ),
+  })
+  .strict();
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type ReorderTasksInput = z.infer<typeof reorderTasksSchema>;
 export type TaskQueryInput = z.infer<typeof taskQuerySchema>;
+export type TaskStatsQueryInput = z.infer<typeof taskStatsQuerySchema>;

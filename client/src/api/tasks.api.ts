@@ -7,6 +7,7 @@ import type {
   SingleTaskResponse,
   TaskQueryParams,
   TasksResponse,
+  TaskStatsResponse,
   UpdateTaskInput,
 } from '../types/task.types.ts';
 
@@ -44,6 +45,12 @@ export const tasksApi = {
     const query = searchParams.toString();
     const endpoint = query ? `/tasks?${query}` : '/tasks';
     return apiClient<TasksResponse>(endpoint, { method: 'GET' });
+  },
+
+  getStats: async (days: 7 | 14 | 30 = 7): Promise<TaskStatsResponse> => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const query = new URLSearchParams({ tz, days: String(days) }).toString();
+    return apiClient<TaskStatsResponse>(`/tasks/stats?${query}`, { method: 'GET' });
   },
 
   getTaskById: async (id: string): Promise<SingleTaskResponse> => {

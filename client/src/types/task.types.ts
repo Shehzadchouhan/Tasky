@@ -13,6 +13,7 @@ export interface Task {
   dueDate: string | null;
   hasDueDate: boolean;
   order?: number;
+  completedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,7 +38,28 @@ export interface UpdateTaskInput {
 
 export type TaskSortField = 'createdAt' | 'dueDate' | 'priority' | 'order';
 export type SortOrder = 'asc' | 'desc';
-export type TaskViewMode = 'list' | 'board';
+export type TaskViewMode = 'list' | 'board' | 'stats';
+
+export interface TaskTotals {
+  total: number;
+  todo: number;
+  inProgress: number;
+  done: number;
+  overdue: number;
+  completionRate: number;
+}
+
+export interface CompletedDayStat {
+  date: string;
+  count: number;
+}
+
+export interface TaskStatsResponse {
+  totals: TaskTotals;
+  completedPerDay: CompletedDayStat[];
+  byCategory: Record<TaskCategory, number>;
+  byPriority: Record<TaskPriority, number>;
+}
 
 export interface ReorderTasksInput {
   status: TaskStatus;

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import app from '../src/app.js';
 import { Task } from '../src/models/Task.js';
+import { backfillCompletedAt } from '../src/config/db.js';
 
 describe('Tasks API & Security (/api/tasks)', () => {
   let userACookie: string;
@@ -777,6 +778,350 @@ describe('Tasks API & Security (/api/tasks)', () => {
           unexpected: true,
         });
       expect(resExtra.status).toBe(400);
+    });
+  });
+
+  describe('Phase 5b: completedAt lifecycle and GET /api/tasks/stats', () => {
+    it('should set completedAt when created with status=done, and null otherwise', async () => {
+      const doneTaskRes = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task Done', status: 'done' });
+      expect(doneTaskRes.status).toBe(201);
+      expect(doneTaskRes.body.task.completedAt).not.toBeNull();
+
+      const todoTaskRes = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task Todo', status: 'todo' });
+      expect(todoTaskRes.status).toBe(201);
+      expect(todoTaskRes.body.task.completedAt).toBeNull();
+    });
+
+    it('should reject client-provided completedAt in POST /api/tasks and PATCH /api/tasks/:id with 400', async () => {
+      const postAttempt = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Hacked', completedAt: new Date().toISOString() });
+      expect(postAttempt.status).toBe(400);
+
+      const created = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Valid Task' });
+
+      const patchAttempt = await request(app)
+        .patch(`/api/tasks/${created.body.task.id}`)
+        .set('Cookie', [userACookie])
+        .send({ completedAt: new Date().toISOString() });
+      expect(patchAttempt.status).toBe(400);
+    });
+
+    it('should update completedAt when status changes via PATCH and reorder', async () => {
+      const taskRes = await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Lifecycle Task', status: 'todo' });
+      const taskId = taskRes.body.task.id;
+      expect(taskRes.body.task.completedAt).toBeNull();
+
+      // Change to done
+      const patchDone = await request(app)
+        .patch(`/api/tasks/${taskId}`)
+        .set('Cookie', [userACookie])
+        .send({ status: 'done' });
+      expect(patchDone.body.task.completedAt).not.toBeNull();
+      const firstCompletedAt = patchDone.body.task.completedAt;
+
+      // Move back to in-progress
+      const patchProg = await request(app)
+        .patch(`/api/tasks/${taskId}`)
+        .set('Cookie', [userACookie])
+        .send({ status: 'in-progress' });
+      expect(patchProg.body.task.completedAt).toBeNull();
+
+      // Reorder into done
+      const reorderDone = await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userACookie])
+        .send({ status: 'done', orderedIds: [taskId] });
+      expect(reorderDone.status).toBe(200);
+
+      const fetchedDone = await request(app)
+        .get(`/api/tasks/${taskId}`)
+        .set('Cookie', [userACookie]);
+      expect(fetchedDone.body.task.status).toBe('done');
+      expect(fetchedDone.body.task.completedAt).not.toBeNull();
+
+      // Reorder within done preserves completedAt
+      const secondCompletedAt = fetchedDone.body.task.completedAt;
+      await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userACookie])
+        .send({ status: 'done', orderedIds: [taskId] });
+      const fetchedPreserved = await request(app)
+        .get(`/api/tasks/${taskId}`)
+        .set('Cookie', [userACookie]);
+      expect(fetchedPreserved.body.task.completedAt).toBe(secondCompletedAt);
+
+      // Reorder out of done clears completedAt
+      await request(app)
+        .post('/api/tasks/reorder')
+        .set('Cookie', [userACookie])
+        .send({ status: 'todo', orderedIds: [taskId] });
+      const fetchedCleared = await request(app)
+        .get(`/api/tasks/${taskId}`)
+        .set('Cookie', [userACookie]);
+      expect(fetchedCleared.body.task.completedAt).toBeNull();
+    });
+
+    it('should backfill completedAt = updatedAt for legacy done tasks with null completedAt', async () => {
+      const userRes = await request(app).get('/api/auth/me').set('Cookie', [userACookie]);
+      const userId = userRes.body.user.id;
+
+      const dummyUpdatedAt = new Date('2026-08-15T12:00:00.000Z');
+      await Task.collection.insertOne({
+        user: userId,
+        title: 'Legacy Done Item',
+        status: 'done',
+        completedAt: null,
+        priority: 'medium',
+        priorityRank: 2,
+        hasDueDate: false,
+        order: 0,
+        createdAt: new Date('2026-08-14T10:00:00.000Z'),
+        updatedAt: dummyUpdatedAt,
+      } as any);
+
+      await backfillCompletedAt();
+
+      const item = await Task.findOne({ title: 'Legacy Done Item' });
+      expect(item?.completedAt?.toISOString()).toBe(dummyUpdatedAt.toISOString());
+    });
+
+    it('should require authentication for GET /api/tasks/stats (401)', async () => {
+      const res = await request(app).get('/api/tasks/stats?tz=UTC&days=7');
+      expect(res.status).toBe(401);
+    });
+
+    it('should validate query parameters and return 400 for invalid tz, days, or unexpected params', async () => {
+      // Invalid timezone
+      const resBadTz = await request(app)
+        .get('/api/tasks/stats?tz=Fake/Invalid_Zone&days=7')
+        .set('Cookie', [userACookie]);
+      expect(resBadTz.status).toBe(400);
+
+      // Invalid days (e.g. 10 or abc)
+      const resBadDays = await request(app)
+        .get('/api/tasks/stats?tz=UTC&days=10')
+        .set('Cookie', [userACookie]);
+      expect(resBadDays.status).toBe(400);
+
+      const resStringDays = await request(app)
+        .get('/api/tasks/stats?tz=UTC&days=abc')
+        .set('Cookie', [userACookie]);
+      expect(resStringDays.status).toBe(400);
+
+      // Missing tz
+      const resNoTz = await request(app)
+        .get('/api/tasks/stats?days=7')
+        .set('Cookie', [userACookie]);
+      expect(resNoTz.status).toBe(400);
+
+      // Unknown parameter (.strict)
+      const resExtra = await request(app)
+        .get('/api/tasks/stats?tz=UTC&days=7&extra=param')
+        .set('Cookie', [userACookie]);
+      expect(resExtra.status).toBe(400);
+    });
+
+    it('should return all zeros (no NaN) on empty account', async () => {
+      const res = await request(app)
+        .get('/api/tasks/stats?tz=UTC&days=7')
+        .set('Cookie', [userACookie]);
+
+      expect(res.status).toBe(200);
+      expect(res.body.totals).toEqual({
+        total: 0,
+        todo: 0,
+        inProgress: 0,
+        done: 0,
+        overdue: 0,
+        completionRate: 0,
+      });
+
+      expect(res.body.byCategory).toEqual({
+        Work: 0,
+        Home: 0,
+        Personal: 0,
+        Urgent: 0,
+        none: 0,
+      });
+
+      expect(res.body.byPriority).toEqual({
+        low: 0,
+        medium: 0,
+        high: 0,
+      });
+
+      expect(res.body.completedPerDay).toHaveLength(7);
+      res.body.completedPerDay.forEach((day: { date: string; count: number }) => {
+        expect(day.count).toBe(0);
+        expect(day.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      });
+    });
+
+    it('should correctly compute totals, byCategory, byPriority, and overdue tasks', async () => {
+      await Task.deleteMany({});
+
+      // 1 todo task with past due date (overdue)
+      await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({
+          title: 'Overdue Todo',
+          status: 'todo',
+          category: 'Work',
+          priority: 'high',
+          dueDate: '2020-01-01',
+        });
+
+      // 1 in-progress task with future due date (not overdue)
+      await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({
+          title: 'Future In Progress',
+          status: 'in-progress',
+          category: 'Personal',
+          priority: 'medium',
+          dueDate: '2030-01-01',
+        });
+
+      // 1 done task with past due date (done tasks are NOT overdue)
+      await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({
+          title: 'Done Task',
+          status: 'done',
+          category: 'Work',
+          priority: 'low',
+          dueDate: '2020-01-01',
+        });
+
+      // 1 todo task without due date
+      await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({
+          title: 'No Due Date',
+          status: 'todo',
+          category: 'Home',
+          priority: 'medium',
+        });
+
+      const res = await request(app)
+        .get('/api/tasks/stats?tz=UTC&days=7')
+        .set('Cookie', [userACookie]);
+
+      expect(res.status).toBe(200);
+      expect(res.body.totals.total).toBe(4);
+      expect(res.body.totals.todo).toBe(2);
+      expect(res.body.totals.inProgress).toBe(1);
+      expect(res.body.totals.done).toBe(1);
+      expect(res.body.totals.overdue).toBe(1);
+      // 1/4 = 25%
+      expect(res.body.totals.completionRate).toBe(25);
+
+      expect(res.body.byCategory).toEqual({
+        Work: 2,
+        Home: 1,
+        Personal: 1,
+        Urgent: 0,
+        none: 0,
+      });
+
+      expect(res.body.byPriority).toEqual({
+        low: 1,
+        medium: 2,
+        high: 1,
+      });
+    });
+
+    it('should never include user A tasks in user B stats', async () => {
+      await Task.deleteMany({});
+
+      // Create tasks for User A
+      await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task A 1', status: 'done', category: 'Urgent' });
+      await request(app)
+        .post('/api/tasks')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Task A 2', status: 'todo', category: 'Work' });
+
+      // User B has no tasks
+      const resB = await request(app)
+        .get('/api/tasks/stats?tz=UTC&days=7')
+        .set('Cookie', [userBCookie]);
+
+      expect(resB.status).toBe(200);
+      expect(resB.body.totals.total).toBe(0);
+      expect(resB.body.totals.done).toBe(0);
+      expect(resB.body.byCategory.Urgent).toBe(0);
+      expect(resB.body.byCategory.Work).toBe(0);
+    });
+
+    it('should group completions into the correct day in the specified timezone (23:30 IST boundary test)', async () => {
+      await Task.deleteMany({});
+      const userRes = await request(app).get('/api/auth/me').set('Cookie', [userACookie]);
+      const userId = userRes.body.user.id;
+
+      // 2026-10-04T18:00:00.000Z in UTC is 2026-10-04.
+      // In Asia/Kolkata (+05:30), it is 2026-10-04 23:30:00 IST (Day is 2026-10-04).
+      // 2026-10-04T18:45:00.000Z in UTC is 2026-10-04.
+      // In Asia/Kolkata (+05:30), 18:45 + 5:30 = 00:15 on 2026-10-05 IST!
+      const timeInISTNextDay = new Date('2026-10-04T18:45:00.000Z');
+
+      await Task.create({
+        user: userId,
+        title: 'Task near midnight',
+        status: 'done',
+        completedAt: timeInISTNextDay,
+        priority: 'medium',
+        priorityRank: 2,
+        hasDueDate: false,
+        order: 0,
+      });
+
+      // Request stats with Asia/Kolkata
+      const resIST = await request(app)
+        .get('/api/tasks/stats?tz=Asia/Kolkata&days=30')
+        .set('Cookie', [userACookie]);
+
+      expect(resIST.status).toBe(200);
+      const dayInIST = resIST.body.completedPerDay.find(
+        (d: { date: string; count: number }) => d.date === '2026-10-05'
+      );
+      expect(dayInIST?.count).toBe(1);
+
+      // In UTC, 2026-10-04T18:45:00.000Z belongs to 2026-10-04!
+      const resUTC = await request(app)
+        .get('/api/tasks/stats?tz=UTC&days=30')
+        .set('Cookie', [userACookie]);
+
+      expect(resUTC.status).toBe(200);
+      const dayInUTC = resUTC.body.completedPerDay.find(
+        (d: { date: string; count: number }) => d.date === '2026-10-04'
+      );
+      expect(dayInUTC?.count).toBe(1);
+
+      const dayInUTC5th = resUTC.body.completedPerDay.find(
+        (d: { date: string; count: number }) => d.date === '2026-10-05'
+      );
+      expect(dayInUTC5th?.count).toBe(0);
     });
   });
 });

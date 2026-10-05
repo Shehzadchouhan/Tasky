@@ -10,6 +10,7 @@ import { TaskControls } from '../components/tasks/TaskControls.tsx';
 import { TaskPagination } from '../components/tasks/TaskPagination.tsx';
 import { EmptyState } from '../components/tasks/EmptyState.tsx';
 import { KanbanBoard } from '../components/tasks/KanbanBoard.tsx';
+import { StatsDashboard } from '../components/stats/StatsDashboard.tsx';
 import { useTasksQuery, useCreateTask, useUpdateTask, useDeleteTask } from '../hooks/useTasks.ts';
 import { useDebounce } from '../hooks/useDebounce.ts';
 import { useToast } from '../hooks/useToast.ts';
@@ -79,6 +80,8 @@ export function DashboardPage() {
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
   const isBoardView = viewParam === 'board';
+  const isStatsView = viewParam === 'stats';
+  const isListView = !isBoardView && !isStatsView;
 
   // Helper to update URL params and reset page to 1
   const updateFilter = (key: string, value: string | null) => {
@@ -103,6 +106,8 @@ export function DashboardPage() {
         const next = new URLSearchParams(prev);
         if (newView === 'board') {
           next.set('view', 'board');
+        } else if (newView === 'stats') {
+          next.set('view', 'stats');
         } else {
           next.delete('view');
         }
@@ -141,8 +146,8 @@ export function DashboardPage() {
       (prev) => {
         const next = new URLSearchParams();
         const currentView = prev.get('view');
-        if (currentView === 'board') {
-          next.set('view', 'board');
+        if (currentView) {
+          next.set('view', currentView);
         }
         return next;
       },
@@ -174,7 +179,7 @@ export function DashboardPage() {
   }, [statusParam, categoryParam, priorityParam, searchUrlParam, sortParam, orderParam, pageParam]);
 
   const { data, isLoading, isError, error, refetch } = useTasksQuery(queryParams, {
-    enabled: !isBoardView,
+    enabled: isListView,
   });
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
@@ -279,7 +284,14 @@ export function DashboardPage() {
       />
 
       {/* Main Content Area */}
-      {isBoardView ? (
+      {isStatsView ? (
+        <StatsDashboard
+          onCreateTask={() => {
+            setTaskToEdit(null);
+            setIsTaskModalOpen(true);
+          }}
+        />
+      ) : isBoardView ? (
         <KanbanBoard
           category={categoryParam}
           priority={priorityParam}

@@ -21,6 +21,7 @@ export interface ITask {
   dueDate: Date | null;
   hasDueDate: boolean;
   order: number;
+  completedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,6 +80,10 @@ const taskSchema = new Schema<ITaskDocument>(
       type: Number,
       default: 0,
     },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -88,6 +93,7 @@ const taskSchema = new Schema<ITaskDocument>(
 // Compound indexes
 taskSchema.index({ user: 1, status: 1 });
 taskSchema.index({ user: 1, dueDate: 1 });
+taskSchema.index({ user: 1, completedAt: 1 });
 
 taskSchema.pre('save', function (next) {
   if (this.isModified('priority') || this.priorityRank === undefined) {

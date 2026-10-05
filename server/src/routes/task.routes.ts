@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import {
   createTask,
   getTasks,
+  getTaskStats,
   getTaskById,
   updateTask,
   deleteTask,
@@ -17,6 +18,7 @@ router.use(requireAuth);
 router.post('/', createTask);
 router.post('/reorder', reorderTasks);
 router.get('/', getTasks);
+router.get('/stats', getTaskStats);
 router.get('/:id', getTaskById);
 router.patch('/:id', updateTask);
 router.delete('/:id', deleteTask);

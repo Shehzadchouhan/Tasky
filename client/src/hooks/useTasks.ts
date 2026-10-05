@@ -8,6 +8,7 @@ import type {
   TaskPriority,
   TaskQueryParams,
   TasksResponse,
+  TaskStatsResponse,
   TaskStatus,
   UpdateTaskInput,
 } from '../types/task.types.ts';
@@ -19,6 +20,18 @@ export function useTasksQuery(
   return useQuery<TasksResponse>({
     queryKey: ['tasks', params],
     queryFn: () => tasksApi.getTasks(params),
+    placeholderData: keepPreviousData,
+    enabled: options?.enabled,
+  });
+}
+
+export function useTaskStatsQuery(
+  days: 7 | 14 | 30 = 7,
+  options?: { enabled?: boolean }
+) {
+  return useQuery<TaskStatsResponse>({
+    queryKey: ['tasks', 'stats', days],
+    queryFn: () => tasksApi.getStats(days),
     placeholderData: keepPreviousData,
     enabled: options?.enabled,
   });
