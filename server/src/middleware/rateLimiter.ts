@@ -10,3 +10,14 @@ export const authRateLimiter = rateLimit({
     error: 'Too many requests, please try again later',
   },
 });
+
+export const assistantRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: {
+    error: 'Assistant request limit reached. Please try again later.',
+  },
+});

@@ -11,6 +11,7 @@ import { TaskPagination } from '../components/tasks/TaskPagination.tsx';
 import { EmptyState } from '../components/tasks/EmptyState.tsx';
 import { KanbanBoard } from '../components/tasks/KanbanBoard.tsx';
 import { StatsDashboard } from '../components/stats/StatsDashboard.tsx';
+import { TasklyAssistant } from '../components/assistant/TasklyAssistant.tsx';
 import { useTasksQuery, useCreateTask, useUpdateTask, useDeleteTask } from '../hooks/useTasks.ts';
 import { useDebounce } from '../hooks/useDebounce.ts';
 import { useToast } from '../hooks/useToast.ts';
@@ -237,6 +238,7 @@ export function DashboardPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
+      <TasklyAssistant />
       {/* Page Title & Create Task CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

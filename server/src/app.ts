@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes.js';
 import taskRoutes from './routes/task.routes.js';
+import assistantRoutes from './routes/assistant.routes.js';
 import { authRateLimiter } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -27,6 +28,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRateLimiter, authRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 app.get('/api/health', (_req: Request, res: Response) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
