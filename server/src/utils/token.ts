@@ -33,7 +33,7 @@ export const getAuthCookieOptions = (): CookieOptions => {
   const isProduction = process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
     secure: isProduction,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
     path: '/',
@@ -48,7 +48,7 @@ export const clearAuthCookie = (res: Response): void => {
   const isProduction = process.env.NODE_ENV === 'production';
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
     secure: isProduction,
     path: '/',
   });

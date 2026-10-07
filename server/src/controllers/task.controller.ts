@@ -11,6 +11,7 @@ import {
   escapeRegex,
 } from '../validation/task.validation.js';
 import { AppError } from '../errors/AppError.js';
+import { createTaskRecord, updateTaskRecord } from '../services/task.service.js';
 
 export const createTask = async (
   req: Request,
@@ -22,31 +23,7 @@ export const createTask = async (
       throw new AppError('Authentication required', 401);
     }
 
-    const validatedData = createTaskSchema.parse(req.body);
-    const priorityRank = PRIORITY_RANKS[validatedData.priority as TaskPriority] || 2;
-    const hasDueDate = Boolean(validatedData.dueDate);
-    const status = validatedData.status || 'todo';
-    const completedAt = status === 'done' ? new Date() : null;
-
-    const lastTask = await Task.findOne({
-      user: req.user._id,
-      status,
-    })
-      .sort({ order: -1 })
-      .select('order');
-
-    const order = lastTask !== null && typeof lastTask.order === 'number' ? lastTask.order + 1 : 0;
-
-    const task = await Task.create({
-      ...validatedData,
-      status,
-      completedAt,
-      priorityRank,
-      hasDueDate,
-      order,
-      user: req.user._id,
-    });
-
+    const task = await createTaskRecord(req.user._id, req.body);
     res.status(201).json({ task });
   } catch (error) {
     next(error);
@@ -174,61 +151,7 @@ export const updateTask = async (
     }
 
     const { id } = taskIdParamSchema.parse(req.params);
-    const validatedData = updateTaskSchema.parse(req.body);
-
-    const existingTask = await Task.findOne({
-      _id: id,
-      user: req.user._id,
-    });
-
-    if (!existingTask) {
-      throw new AppError('Task not found', 404);
-    }
-
-    const updatePayload: Record<string, any> = { ...validatedData };
-
-    if (validatedData.priority) {
-      updatePayload.priorityRank = PRIORITY_RANKS[validatedData.priority as TaskPriority];
-    }
-
-    if ('dueDate' in validatedData) {
-      updatePayload.hasDueDate = Boolean(validatedData.dueDate);
-    }
-
-    if (validatedData.status && validatedData.status !== existingTask.status) {
-      const lastTaskInNewCol = await Task.findOne({
-        user: req.user._id,
-        status: validatedData.status,
-      })
-        .sort({ order: -1 })
-        .select('order');
-
-      updatePayload.order =
-        lastTaskInNewCol !== null && typeof lastTaskInNewCol.order === 'number'
-          ? lastTaskInNewCol.order + 1
-          : 0;
-
-      if (validatedData.status === 'done') {
-        updatePayload.completedAt = new Date();
-      } else {
-        updatePayload.completedAt = null;
-      }
-    }
-
-    const task = await Task.findOneAndUpdate(
-      {
-        _id: id,
-        user: req.user._id,
-      },
-      {
-        $set: updatePayload,
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
+    const task = await updateTaskRecord(req.user._id, id, req.body);
     res.status(200).json({ task });
   } catch (error) {
     next(error);

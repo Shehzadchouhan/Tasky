@@ -17,6 +17,7 @@ interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   taskToEdit?: Task | null;
+  initialTitle?: string;
   onSubmit: (data: CreateTaskInput | UpdateTaskInput) => Promise<void>;
   isSubmitting: boolean;
 }
@@ -43,15 +44,16 @@ const STATUS_OPTIONS = [
 
 interface TaskModalFormProps {
   taskToEdit?: Task | null;
+  initialTitle?: string;
   onSubmit: (data: CreateTaskInput | UpdateTaskInput) => Promise<void>;
   onClose: () => void;
   isSubmitting: boolean;
 }
 
-function TaskModalForm({ taskToEdit, onSubmit, onClose, isSubmitting }: TaskModalFormProps) {
+function TaskModalForm({ taskToEdit, initialTitle, onSubmit, onClose, isSubmitting }: TaskModalFormProps) {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [title, setTitle] = useState(taskToEdit?.title || '');
+  const [title, setTitle] = useState(taskToEdit?.title || initialTitle || '');
   const [description, setDescription] = useState(taskToEdit?.description || '');
   const [category, setCategory] = useState<TaskCategory>(taskToEdit?.category || 'none');
   const [priority, setPriority] = useState<TaskPriority>(taskToEdit?.priority || 'medium');
@@ -239,6 +241,7 @@ export function TaskModal({
   isOpen,
   onClose,
   taskToEdit,
+  initialTitle,
   onSubmit,
   isSubmitting,
 }: TaskModalProps) {
@@ -255,8 +258,9 @@ export function TaskModal({
     >
       {isOpen && (
         <TaskModalForm
-          key={taskToEdit ? taskToEdit.id : 'new-task'}
+          key={taskToEdit ? taskToEdit.id : `new-task-${initialTitle ?? ''}`}
           taskToEdit={taskToEdit}
+          initialTitle={initialTitle}
           onSubmit={onSubmit}
           onClose={onClose}
           isSubmitting={isSubmitting}

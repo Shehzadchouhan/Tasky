@@ -8,11 +8,33 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-const PORT = process.env.PORT || 5000;
+const DEFAULT_PORT = Number(process.env.PORT || 5000);
+const MAX_PORT_RETRIES = 10;
+
+const startServer = async (port: number, attempt = 1): Promise<void> => {
+  const server = app.listen(port, () => {
+    console.log(`[Server] Taskly server running on http://localhost:${port}`);
+  });
+
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      if (attempt >= MAX_PORT_RETRIES) {
+        console.error(`[Server] Could not start on port ${port} after ${MAX_PORT_RETRIES} attempts.`);
+        process.exit(1);
+      }
+
+      const nextPort = port + 1;
+      console.warn(`[Server] Port ${port} is busy. Retrying on ${nextPort}...`);
+      void startServer(nextPort, attempt + 1);
+      return;
+    }
+
+    console.error('[Server] Failed to start server:', error);
+    process.exit(1);
+  });
+};
 
 // Connect to MongoDB gracefully
 await connectDB();
 
-app.listen(PORT, () => {
-  console.log(`[Server] Taskly server running on http://localhost:${PORT}`);
-});
+await startServer(DEFAULT_PORT);

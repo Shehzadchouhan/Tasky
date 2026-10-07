@@ -1,14 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowUp, Bot, LoaderCircle, Mic, Send, Sparkles, Trash2, X } from 'lucide-react';
+import { ArrowUp, Bot, LoaderCircle, Mic, RefreshCw, Send, Sparkles, Trash2, X } from 'lucide-react';
 import { assistantApi } from '../../api/assistant.api.ts';
 import type { AssistantHistoryMessage } from '../../api/assistant.api.ts';
+import { ToastContext } from '../../context/ToastContext.tsx';
+import { ApiClientError } from '../../api/client.ts';
 
 type ChatMessage = {
   role: 'user' | 'assistant';
   text: string;
-  pendingDelete?: { taskId: string; title: string };
+  isError?: boolean;
+  errorCode?: string;
+  failedPrompt?: string;
+  pendingDelete?: {
+    taskId: string;
+    title: string;
+    expiresAt: number;
+  };
 };
 
 type SpeechRecognitionResultEvent = Event & {
@@ -35,29 +44,54 @@ type SpeechWindow = Window & {
   webkitSpeechRecognition?: SpeechRecognitionConstructor;
 };
 
-export function TasklyAssistant() {
+interface TasklyAssistantProps {
+  onOpenTaskModal?: (title: string) => void;
+}
+
+const INITIAL_MESSAGES: ChatMessage[] = [
+  { role: 'assistant', text: 'Hi! I can help you check, organize, and update your tasks. What would you like to do?' },
+];
+
+const TWO_MINUTES_MS = 2 * 60 * 1000;
+
+export function TasklyAssistant({ onOpenTaskModal }: TasklyAssistantProps) {
   const queryClient = useQueryClient();
+  const toastContext = useContext(ToastContext);
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', text: 'Hi! I can help you check, organize, and update your tasks. What would you like to do?' },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const speakReplyRef = useRef(false);
   const requestInFlightRef = useRef(false);
+  const deleteInFlightRef = useRef(false);
   const finalTranscriptRef = useRef('');
 
+  // Periodic tick to re-evaluate pending delete expiry while open
+  const [, setTick] = useState(0);
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    if (!isOpen) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 5000);
+    return () => clearInterval(interval);
+  }, [isOpen]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo?.({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, isLoading]);
 
   const speak = (text: string) => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setMessages(INITIAL_MESSAGES);
+    setVoiceError('');
+    // Notice: unsent draft text in `input` is kept
   };
 
   const sendMessage = async (text: string) => {
@@ -74,14 +108,25 @@ export function TasklyAssistant() {
       setMessages((current) => [...current, {
         role: 'assistant',
         text: reply.message,
-        ...(reply.pendingDelete ? { pendingDelete: reply.pendingDelete } : {}),
+        ...(reply.pendingDelete ? {
+          pendingDelete: {
+            ...reply.pendingDelete,
+            expiresAt: Date.now() + TWO_MINUTES_MS,
+          },
+        } : {}),
       }]);
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
       if (speakReplyRef.current) speak(reply.message);
     } catch (error) {
+      // Keep typed text on failure so user doesn't lose it
+      setInput(prompt);
+      const errorCode = error instanceof ApiClientError ? error.code : undefined;
       setMessages((current) => [...current, {
         role: 'assistant',
-        text: error instanceof Error ? error.message : 'Sorry, I could not reach the assistant.',
+        text: error instanceof Error ? error.message : 'The assistant is busy right now. Please try again in a moment.',
+        isError: true,
+        errorCode,
+        failedPrompt: prompt,
       }]);
     } finally {
       speakReplyRef.current = false;
@@ -143,22 +188,29 @@ export function TasklyAssistant() {
   };
 
   const confirmDelete = async (pendingDelete: NonNullable<ChatMessage['pendingDelete']>) => {
+    if (deleteInFlightRef.current) return;
+    deleteInFlightRef.current = true;
     setIsLoading(true);
     try {
       const result = await assistantApi.confirmDelete(pendingDelete.taskId);
+      if (result.ok) {
+        toastContext?.showToast('Task deleted', 'success');
+      }
       setMessages((current) => [
         ...current.map((message) => message.pendingDelete?.taskId === pendingDelete.taskId
           ? { ...message, pendingDelete: undefined }
           : message),
-        { role: 'assistant', text: result.message },
+        { role: 'assistant', text: 'Task deleted.' },
       ]);
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
     } catch (error) {
       setMessages((current) => [...current, {
         role: 'assistant',
         text: error instanceof Error ? error.message : 'Could not delete the task.',
+        isError: true,
       }]);
     } finally {
+      deleteInFlightRef.current = false;
       setIsLoading(false);
     }
   };
@@ -186,7 +238,7 @@ export function TasklyAssistant() {
             </div>
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
               aria-label="Close assistant"
               className="rounded-lg p-1.5 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
@@ -200,29 +252,58 @@ export function TasklyAssistant() {
                 <div className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                   message.role === 'user'
                     ? 'bg-[#6c63ff] text-white'
-                    : 'bg-slate-100 text-slate-800 dark:bg-white/10 dark:text-slate-100'
+                    : message.isError
+                      ? 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-900/40'
+                      : 'bg-slate-100 text-slate-800 dark:bg-white/10 dark:text-slate-100'
                 }`}>
                   <p className="whitespace-pre-wrap">{message.text}</p>
+                  {message.isError && message.failedPrompt && (
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      {message.errorCode !== 'AI_QUOTA' && (
+                        <button
+                          type="button"
+                          onClick={() => void sendMessage(message.failedPrompt!)}
+                          disabled={isLoading}
+                          className="inline-flex items-center gap-1 rounded-lg bg-[#6c63ff] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#5750d6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff] disabled:opacity-50"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Retry
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onOpenTaskModal?.(message.failedPrompt!)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-300 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]"
+                      >
+                        Add manually
+                      </button>
+                    </div>
+                  )}
                   {message.pendingDelete && (
                     <div className="mt-3 rounded-xl border border-rose-200 bg-white p-2.5 text-slate-800 dark:border-rose-900 dark:bg-[#1e1e2f] dark:text-slate-100">
-                      <p className="text-xs font-medium">Delete “{message.pendingDelete.title}”?</p>
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => confirmDelete(message.pendingDelete!)}
-                          disabled={isLoading}
-                          className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Delete
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => cancelDelete(message.pendingDelete!.taskId)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200"
-                        >
-                          <X className="h-3.5 w-3.5" aria-hidden="true" /> Cancel
-                        </button>
-                      </div>
+                      {Date.now() > message.pendingDelete.expiresAt ? (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 italic">Deletion request for “{message.pendingDelete.title}” expired.</p>
+                      ) : (
+                        <>
+                          <p className="text-xs font-medium">Delete “{message.pendingDelete.title}”?</p>
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => confirmDelete(message.pendingDelete!)}
+                              disabled={isLoading}
+                              className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => cancelDelete(message.pendingDelete!.taskId)}
+                              className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200"
+                            >
+                              <X className="h-3.5 w-3.5" aria-hidden="true" /> Cancel
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -231,7 +312,7 @@ export function TasklyAssistant() {
             {isLoading && (
               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400" role="status">
                 <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
-                Working on it…
+                Working...
               </div>
             )}
           </div>
@@ -253,10 +334,11 @@ export function TasklyAssistant() {
               <input
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder={isListening ? 'Listening…' : 'Ask Taskly anything…'}
+                disabled={isLoading}
+                placeholder={isLoading ? 'Working...' : isListening ? 'Listening…' : 'Ask Taskly anything…'}
                 aria-label="Message the Taskly assistant"
                 maxLength={2000}
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#6c63ff] focus:ring-2 focus:ring-[#6c63ff]/20 dark:border-white/10 dark:bg-[#1e1e2f] dark:text-white"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#6c63ff] focus:ring-2 focus:ring-[#6c63ff]/20 disabled:bg-slate-50 disabled:opacity-70 dark:border-white/10 dark:bg-[#1e1e2f] dark:text-white dark:disabled:bg-[#181826]"
               />
               <button
                 type="submit"

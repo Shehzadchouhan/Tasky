@@ -21,3 +21,17 @@ export const assistantRateLimiter = rateLimit({
     error: 'Assistant request limit reached. Please try again later.',
   },
 });
+
+export const notesWriteRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  limit: 120, // max 120 write requests per minute per user
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return (req as any).user?._id?.toString() || 'anonymous';
+  },
+  message: {
+    error: 'Too many write requests, please try again later',
+  },
+});
+

@@ -3,12 +3,14 @@ import type { ApiErrorResponse, ValidationErrorDetail } from '../types/api.types
 export class ApiClientError extends Error {
   status: number;
   details?: ValidationErrorDetail[];
+  code?: string;
 
-  constructor(message: string, status: number, details?: ValidationErrorDetail[]) {
+  constructor(message: string, status: number, details?: ValidationErrorDetail[], code?: string) {
     super(message);
     this.name = 'ApiClientError';
     this.status = status;
     this.details = details;
+    this.code = code;
   }
 }
 
@@ -72,9 +74,10 @@ export async function apiClient<T>(
   }
 
   if (!response.ok) {
-    const errorData = (typeof data === 'object' && data !== null ? data : {}) as Partial<ApiErrorResponse>;
+    const errorData = (typeof data === 'object' && data !== null ? data : {}) as Partial<ApiErrorResponse> & { code?: string };
     const errorMessage = errorData.error || response.statusText || 'An unexpected error occurred';
     const details = errorData.details;
+    const code = errorData.code;
 
     // Trigger unauthorized callback on 401 if not an exempted check (like initial /me)
     const isMeEndpoint = endpoint.includes('/auth/me');
@@ -85,7 +88,7 @@ export async function apiClient<T>(
       }
     }
 
-    throw new ApiClientError(errorMessage, response.status, details);
+    throw new ApiClientError(errorMessage, response.status, details, code);
   }
 
   return data as T;

@@ -17,6 +17,13 @@ export const taskIdParamSchema = z
   })
   .strict();
 
+export const isWithinFiveYears = (val: Date | null | undefined): boolean => {
+  if (!val) return true;
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 5);
+  return val.getTime() <= maxDate.getTime();
+};
+
 export const createTaskSchema = z
   .object({
     title: z
@@ -44,6 +51,7 @@ export const createTaskSchema = z
       .default('todo'),
     dueDate: z
       .preprocess((val) => (val === '' ? null : val), z.coerce.date().nullable().optional())
+      .refine(isWithinFiveYears, { message: 'Due date cannot be more than 5 years in the future' })
       .default(null),
   })
   .strict();
@@ -72,7 +80,8 @@ export const updateTaskSchema = z
       .enum(['todo', 'in-progress', 'done'] as const)
       .optional(),
     dueDate: z
-      .preprocess((val) => (val === '' ? null : val), z.coerce.date().nullable().optional()),
+      .preprocess((val) => (val === '' ? null : val), z.coerce.date().nullable().optional())
+      .refine(isWithinFiveYears, { message: 'Due date cannot be more than 5 years in the future' }),
   })
   .strict()
   .refine((data) => Object.keys(data).length > 0, {
@@ -108,7 +117,7 @@ export const taskQuerySchema = z
   })
   .strict();
 
-const isValidIANATimezone = (tz: string): boolean => {
+export const isValidIANATimezone = (tz: string): boolean => {
   if (!tz || typeof tz !== 'string') return false;
   try {
     Intl.DateTimeFormat(undefined, { timeZone: tz });

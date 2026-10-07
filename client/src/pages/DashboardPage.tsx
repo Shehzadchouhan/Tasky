@@ -12,6 +12,7 @@ import { EmptyState } from '../components/tasks/EmptyState.tsx';
 import { KanbanBoard } from '../components/tasks/KanbanBoard.tsx';
 import { StatsDashboard } from '../components/stats/StatsDashboard.tsx';
 import { TasklyAssistant } from '../components/assistant/TasklyAssistant.tsx';
+import { NotesPanel } from '../components/notes/NotesPanel.tsx';
 import { useTasksQuery, useCreateTask, useUpdateTask, useDeleteTask } from '../hooks/useTasks.ts';
 import { useDebounce } from '../hooks/useDebounce.ts';
 import { useToast } from '../hooks/useToast.ts';
@@ -43,6 +44,57 @@ export function DashboardPage() {
   const sortParam = (searchParams.get('sort') as TaskSortField) || 'createdAt';
   const orderParam = (searchParams.get('order') as SortOrder) || 'desc';
   const pageParam = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+  const tabParam = (searchParams.get('tab') as 'notes' | 'tasks') || 'tasks';
+  const selectedNoteIdParam = searchParams.get('note');
+
+  // Persisted collapsible state for Notes panel on desktop
+  const [isNotesCollapsed, setIsNotesCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('notes_panel_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleNotesCollapse = () => {
+    setIsNotesCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('notes_panel_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleSelectNote = (id: string | null) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (id) {
+          next.set('note', id);
+        } else {
+          next.delete('note');
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const handleTabChange = (newTab: 'notes' | 'tasks') => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (newTab === 'notes') {
+          next.set('tab', 'notes');
+        } else {
+          next.delete('tab');
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   // Local state for search bar (to debounce)
   const [searchInput, setSearchInput] = useState(searchUrlParam);
@@ -77,6 +129,7 @@ export function DashboardPage() {
   // Modals state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [initialTaskTitle, setInitialTaskTitle] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
@@ -238,117 +291,132 @@ export function DashboardPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <TasklyAssistant />
-      {/* Page Title & Create Task CTA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            My Tasks
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Manage your daily tasks, track progress, and meet deadlines.
-          </p>
-        </div>
-
-        <Button
-          type="button"
-          variant="primary"
-          size="md"
-          onClick={() => {
-            setTaskToEdit(null);
-            setIsTaskModalOpen(true);
-          }}
-          className="self-start sm:self-auto shadow-md"
-        >
-          <Plus className="w-4 h-4 mr-1" aria-hidden="true" />
-          Add Task
-        </Button>
-      </div>
-
-      {/* Search, Filter, Sort Controls */}
-      <TaskControls
-        search={searchInput}
-        onSearchChange={setSearchInput}
-        status={statusParam}
-        onStatusChange={(val) => updateFilter('status', val)}
-        category={categoryParam}
-        onCategoryChange={(val) => updateFilter('category', val)}
-        priority={priorityParam}
-        onPriorityChange={(val) => updateFilter('priority', val)}
-        sort={sortParam}
-        onSortChange={(val) => updateFilter('sort', val)}
-        order={orderParam}
-        onOrderToggle={handleOrderToggle}
-        onResetFilters={handleResetFilters}
-        hasActiveFilters={hasActiveFilters}
-        view={viewParam}
-        onViewChange={handleViewChange}
+      <TasklyAssistant
+        onOpenTaskModal={(title) => {
+          setTaskToEdit(null);
+          setInitialTaskTitle(title);
+          setIsTaskModalOpen(true);
+        }}
       />
 
-      {/* Main Content Area */}
-      {isStatsView ? (
-        <StatsDashboard
-          onCreateTask={() => {
-            setTaskToEdit(null);
-            setIsTaskModalOpen(true);
-          }}
-        />
-      ) : isBoardView ? (
-        <KanbanBoard
-          category={categoryParam}
-          priority={priorityParam}
-          search={searchUrlParam}
-          onToggleDone={handleToggleDone}
-          onEdit={(t) => {
-            setTaskToEdit(t);
-            setIsTaskModalOpen(true);
-          }}
-          onDelete={(t) => {
-            setTaskToDelete(t);
-            setIsDeleteModalOpen(true);
-          }}
-        />
-      ) : isLoading ? (
-        <div className="flex flex-col gap-3 my-2" data-testid="tasks-loading">
-          <TaskSkeleton />
-          <TaskSkeleton />
-          <TaskSkeleton />
-        </div>
-      ) : isError ? (
+      {/* Segmented Switch (visible below lg breakpoint: < 1024px) */}
+      <div className="lg:hidden flex items-center justify-center">
         <div
-          role="alert"
-          className="flex flex-col items-center justify-center p-8 rounded-2xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-center gap-3"
+          role="tablist"
+          aria-label="View selection"
+          className="inline-flex p-1 rounded-xl bg-slate-200/80 dark:bg-white/10 text-xs font-semibold"
         >
-          <AlertCircle className="w-8 h-8 text-rose-500" aria-hidden="true" />
-          <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">
-            {error instanceof Error ? error.message : 'Unable to load tasks.'}
-          </p>
-          <Button
+          <button
             type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => refetch()}
-            className="mt-1"
+            role="tab"
+            aria-selected={tabParam === 'notes'}
+            onClick={() => handleTabChange('notes')}
+            className={`px-5 py-1.5 rounded-lg transition-all ${
+              tabParam === 'notes'
+                ? 'bg-white dark:bg-[#252538] text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
           >
-            <RefreshCw className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
-            Retry
-          </Button>
+            Notes
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tabParam === 'tasks'}
+            onClick={() => handleTabChange('tasks')}
+            className={`px-5 py-1.5 rounded-lg transition-all ${
+              tabParam === 'tasks'
+                ? 'bg-white dark:bg-[#252538] text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Tasks
+          </button>
         </div>
-      ) : tasks.length === 0 ? (
-        <EmptyState
-          isFiltered={hasActiveFilters}
-          onClearFilters={handleResetFilters}
-          onCreateTask={() => {
-            setTaskToEdit(null);
-            setIsTaskModalOpen(true);
-          }}
-        />
-      ) : (
-        <div className="flex flex-col gap-3" data-testid="task-list">
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
+      </div>
+
+      {/* Main Dual-Panel Layout */}
+      <div className="w-full flex flex-col lg:flex-row gap-6 items-start">
+        {/* Left: Notes Panel (Desktop side-by-side or Mobile tab) */}
+        <div
+          className={`w-full lg:w-auto transition-all ${
+            tabParam === 'notes' ? 'block' : 'hidden lg:block'
+          }`}
+        >
+          <NotesPanel
+            selectedNoteId={selectedNoteIdParam}
+            onSelectNote={handleSelectNote}
+            isCollapsed={isNotesCollapsed}
+            onToggleCollapse={handleToggleNotesCollapse}
+          />
+        </div>
+
+        {/* Right: Tasks Dashboard (Desktop side-by-side or Mobile tab) */}
+        <div
+          className={`w-full min-w-0 flex-1 flex flex-col gap-6 ${
+            tabParam === 'tasks' ? 'block' : 'hidden lg:block'
+          }`}
+        >
+          {/* Page Title & Create Task CTA */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                My Tasks
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Manage your daily tasks, track progress, and meet deadlines.
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              onClick={() => {
+                setTaskToEdit(null);
+                setInitialTaskTitle('');
+                setIsTaskModalOpen(true);
+              }}
+              className="self-start sm:self-auto shadow-md"
+            >
+              <Plus className="w-4 h-4 mr-1" aria-hidden="true" />
+              Add Task
+            </Button>
+          </div>
+
+          {/* Search, Filter, Sort Controls */}
+          <TaskControls
+            search={searchInput}
+            onSearchChange={setSearchInput}
+            status={statusParam}
+            onStatusChange={(val) => updateFilter('status', val)}
+            category={categoryParam}
+            onCategoryChange={(val) => updateFilter('category', val)}
+            priority={priorityParam}
+            onPriorityChange={(val) => updateFilter('priority', val)}
+            sort={sortParam}
+            onSortChange={(val) => updateFilter('sort', val)}
+            order={orderParam}
+            onOrderToggle={handleOrderToggle}
+            onResetFilters={handleResetFilters}
+            hasActiveFilters={hasActiveFilters}
+            view={viewParam}
+            onViewChange={handleViewChange}
+          />
+
+          {/* Main Content Area */}
+          {isStatsView ? (
+            <StatsDashboard
+              onCreateTask={() => {
+                setTaskToEdit(null);
+                setIsTaskModalOpen(true);
+              }}
+            />
+          ) : isBoardView ? (
+            <KanbanBoard
+              category={categoryParam}
+              priority={priorityParam}
+              search={searchUrlParam}
               onToggleDone={handleToggleDone}
               onEdit={(t) => {
                 setTaskToEdit(t);
@@ -358,21 +426,74 @@ export function DashboardPage() {
                 setTaskToDelete(t);
                 setIsDeleteModalOpen(true);
               }}
-              isToggling={updateTaskMutation.isPending}
             />
-          ))}
+          ) : isLoading ? (
+            <div className="flex flex-col gap-3 my-2" data-testid="tasks-loading">
+              <TaskSkeleton />
+              <TaskSkeleton />
+              <TaskSkeleton />
+            </div>
+          ) : isError ? (
+            <div
+              role="alert"
+              className="flex flex-col items-center justify-center p-8 rounded-2xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-center gap-3"
+            >
+              <AlertCircle className="w-8 h-8 text-rose-500" aria-hidden="true" />
+              <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">
+                {error instanceof Error ? error.message : 'Unable to load tasks.'}
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => refetch()}
+                className="mt-1"
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
+                Retry
+              </Button>
+            </div>
+          ) : tasks.length === 0 ? (
+            <EmptyState
+              isFiltered={hasActiveFilters}
+              onClearFilters={handleResetFilters}
+              onCreateTask={() => {
+                setTaskToEdit(null);
+                setIsTaskModalOpen(true);
+              }}
+            />
+          ) : (
+            <div className="flex flex-col gap-3" data-testid="task-list">
+              {tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onToggleDone={handleToggleDone}
+                  onEdit={(t) => {
+                    setTaskToEdit(t);
+                    setIsTaskModalOpen(true);
+                  }}
+                  onDelete={(t) => {
+                    setTaskToDelete(t);
+                    setIsDeleteModalOpen(true);
+                  }}
+                  isToggling={updateTaskMutation.isPending}
+                />
+              ))}
 
-          {/* Pagination Navigation */}
-          <TaskPagination
-            currentPage={pageParam}
-            totalPages={totalPages}
-            totalTasks={totalTasks}
-            limit={PAGE_LIMIT}
-            onPageChange={handlePageChange}
-            isLoading={isLoading}
-          />
+              {/* Pagination Navigation */}
+              <TaskPagination
+                currentPage={pageParam}
+                totalPages={totalPages}
+                totalTasks={totalTasks}
+                limit={PAGE_LIMIT}
+                onPageChange={handlePageChange}
+                isLoading={isLoading}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Task Create / Edit Modal */}
       <TaskModal
@@ -380,8 +501,10 @@ export function DashboardPage() {
         onClose={() => {
           setIsTaskModalOpen(false);
           setTaskToEdit(null);
+          setInitialTaskTitle('');
         }}
         taskToEdit={taskToEdit}
+        initialTitle={initialTaskTitle}
         onSubmit={handleTaskSubmit}
         isSubmitting={createTaskMutation.isPending || updateTaskMutation.isPending}
       />

@@ -14,15 +14,22 @@ export interface AssistantHistoryMessage {
 }
 
 export const assistantApi = {
-  chat: (message: string, history: AssistantHistoryMessage[]) =>
+  chat: (message: string, history: AssistantHistoryMessage[], timezone?: string) =>
     apiClient<AssistantReply>('/assistant/chat', {
       method: 'POST',
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({
+        message,
+        history,
+        timezone: timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }),
     }),
 
   confirmDelete: (taskId: string) =>
-    apiClient<{ message: string }>('/assistant/confirm-delete', {
+    apiClient<{ ok: boolean }>('/assistant/confirm-delete', {
       method: 'POST',
-      body: JSON.stringify({ taskId }),
+      body: JSON.stringify({
+        taskId,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }),
     }),
 };
