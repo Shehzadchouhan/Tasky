@@ -1,4 +1,4 @@
-import { Sun, Moon, LogOut, CheckSquare } from 'lucide-react';
+import { Sun, Moon, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.ts';
 import { useTheme } from '../../hooks/useTheme.ts';
 
@@ -11,9 +11,7 @@ export function Header() {
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         {/* Logo / Brand */}
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6c63ff] to-[#5750d6] flex items-center justify-center text-white shadow-md shadow-[#6c63ff]/20">
-            <CheckSquare className="w-5 h-5" />
-          </div>
+          <img src="/taskly-icon.png" alt="" className="w-9 h-9 object-contain" />
           <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
             Taskly
           </span>
