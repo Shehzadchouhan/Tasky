@@ -301,7 +301,7 @@ const executeTool = async (
 export const getConfiguredModels = (): string[] => {
   const rawList = process.env.GEMINI_MODELS?.trim();
   if (rawList) {
-    const list = rawList.split(',').map((m) => m.trim()).filter(Boolean);
+    const list = rawList.split(',').map((m: string) => m.trim()).filter(Boolean);
     if (list.length > 0) return list;
   }
   const singleModel = process.env.GEMINI_MODEL?.trim();
