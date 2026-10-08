@@ -16,9 +16,19 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 
+const getClientOrigin = (rawUrl?: string): string => {
+  if (!rawUrl) return 'http://localhost:5173';
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.origin;
+  } catch {
+    return rawUrl.replace(/\/+$/, '');
+  }
+};
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: getClientOrigin(process.env.CLIENT_URL),
     credentials: true,
   })
 );
