@@ -42,6 +42,13 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/notes', noteRoutes);
 
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Taskly API is running. Check /api/health for system status.',
+  });
+});
+
 app.get('/api/health', (_req: Request, res: Response) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   res.status(200).json({
