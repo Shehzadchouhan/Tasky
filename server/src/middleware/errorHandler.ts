@@ -19,12 +19,13 @@ export const errorHandler: ErrorRequestHandler = (
   const isProduction = process.env.NODE_ENV === 'production';
 
   // Custom AppError
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({
+  if (err instanceof AppError || ('statusCode' in err && typeof (err as any).statusCode === 'number')) {
+    const statusCode = (err as any).statusCode || 500;
+    res.status(statusCode).json({
       error: err.message,
-      ...(err.code ? { code: err.code } : {}),
-      ...(err.details ? { details: err.details } : {}),
-      ...(!isProduction && err.statusCode === 500 ? { stack: err.stack } : {}),
+      ...((err as any).code ? { code: (err as any).code } : {}),
+      ...((err as any).details ? { details: (err as any).details } : {}),
+      ...(!isProduction && statusCode === 500 ? { stack: err.stack } : {}),
     });
     return;
   }
@@ -59,9 +60,7 @@ export const errorHandler: ErrorRequestHandler = (
   }
 
   // Fallback 500 Internal Server Error
-  if (!isProduction) {
-    console.error('[Unhandled Error]', err);
-  }
+  console.error('[Unhandled Server Error]', err);
 
   res.status(500).json({
     error: 'Internal server error',

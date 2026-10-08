@@ -6,6 +6,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
+  validate: { trustProxy: false },
   message: {
     error: 'Too many requests, please try again later',
   },
@@ -17,6 +18,7 @@ export const assistantRateLimiter = rateLimit({
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
+  validate: { trustProxy: false },
   message: {
     error: 'Assistant request limit reached. Please try again later.',
   },
@@ -27,6 +29,7 @@ export const notesWriteRateLimiter = rateLimit({
   limit: 120, // max 120 write requests per minute per user
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  validate: { trustProxy: false },
   keyGenerator: (req) => {
     return (req as any).user?._id?.toString() || 'anonymous';
   },
