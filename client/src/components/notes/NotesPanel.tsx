@@ -123,6 +123,7 @@ export function NotesPanel({
     category,
     content,
     status,
+    saveError,
     hasConflict,
     conflictVersion,
     reloadTrigger,
@@ -585,11 +586,16 @@ export function NotesPanel({
                     </span>
                   )}
                   {status === 'error' && !hasConflict && (
-                    <div role="alert" className="flex items-center gap-1.5">
+                    <div role="alert" className="flex max-w-[min(70vw,24rem)] flex-col items-start gap-1 text-left">
                       <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-medium">
-                        <AlertCircle className="w-3.5 h-3.5" />
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                         Save failed
                       </span>
+                      {saveError && (
+                        <span className="break-words text-[11px] text-rose-600 dark:text-rose-400">
+                          {saveError}
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => void retrySave()}

@@ -26,6 +26,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
   const [category, setCategory] = useState(note?.category || '');
   const [content, setContent] = useState<Record<string, any>>(note?.content || { type: 'doc', content: [] });
   const [status, setStatus] = useState<NoteSaveStatus>('saved');
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [hasConflict, setHasConflict] = useState(false);
   const [conflictVersion, setConflictVersion] = useState<number | null>(null);
   const [reloadTrigger, setReloadTrigger] = useState(0);
@@ -64,6 +65,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       setCategory('');
       setContent({ type: 'doc', content: [] });
       setStatus('saved');
+      setSaveError(null);
       setHasConflict(false);
       setConflictVersion(null);
       isDirtyRef.current = false;
@@ -78,6 +80,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       setCategory(note.category || '');
       setContent(note.content || { type: 'doc', content: [] });
       setStatus('saved');
+      setSaveError(null);
       setHasConflict(false);
       setConflictVersion(null);
       isDirtyRef.current = false;
@@ -101,6 +104,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       inFlightRef.current = true;
       inFlightPayloadRef.current = payloadToSave;
       lastSaveSucceededRef.current = false;
+      setSaveError(null);
       setStatus('saving');
 
       try {
@@ -131,6 +135,11 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
         inFlightRef.current = false;
         inFlightPayloadRef.current = null;
         lastSaveSucceededRef.current = false;
+        setSaveError(
+          err instanceof Error && err.message
+            ? err.message
+            : 'Unable to save this note. Check your connection and try again.'
+        );
         if (err instanceof ApiClientError && (err.status === 409 || err.code === 'NOTE_CONFLICT')) {
           setHasConflict(true);
           // If server provided current version in error details or payload
@@ -165,6 +174,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
   const scheduleAutoSave = useCallback(() => {
     if (hasConflict) return;
     isDirtyRef.current = true;
+    setSaveError(null);
     setStatus('unsaved');
 
     if (debounceTimerRef.current) {
@@ -298,10 +308,16 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       setConflictVersion(null);
       isDirtyRef.current = false;
       pendingPayloadRef.current = null;
+      setSaveError(null);
       setStatus('saved');
       setReloadTrigger((prev) => prev + 1);
       onNoteUpdated(res.note);
-    } catch {
+    } catch (error) {
+      setSaveError(
+        error instanceof Error && error.message
+          ? error.message
+          : 'Unable to reload the note. Check your connection and try again.'
+      );
       setStatus('error');
     }
   }, [onNoteUpdated]);
@@ -313,12 +329,18 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
 
     try {
       setStatus('saving');
+      setSaveError(null);
       const latest = await notesApi.getNoteById(noteId);
       currentVersionRef.current = latest.note.version;
       setHasConflict(false);
       setConflictVersion(null);
       await startSave({ title: titleRef.current, category: categoryRef.current, content: contentRef.current });
-    } catch {
+    } catch (error) {
+      setSaveError(
+        error instanceof Error && error.message
+          ? error.message
+          : 'Unable to resolve the note conflict. Check your connection and try again.'
+      );
       setStatus('error');
     }
   }, [startSave]);
@@ -333,6 +355,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
     const payload = getCurrentPayload();
     pendingPayloadRef.current = null;
     isDirtyRef.current = true;
+    setSaveError(null);
     if (inFlightRef.current) {
       pendingPayloadRef.current = payload;
       await savePromiseRef.current;
@@ -347,6 +370,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
     category,
     content,
     status,
+    saveError,
     hasConflict,
     conflictVersion,
     reloadTrigger,

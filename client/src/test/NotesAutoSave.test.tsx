@@ -304,6 +304,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     });
 
     expect(result.current.status).toBe('error');
+    expect(result.current.saveError).toBe('Server Error');
     // Keeps unsaved text in memory
     expect(result.current.title).toBe('Failing Edit');
 
@@ -317,6 +318,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     });
 
     expect(result.current.status).toBe('saved');
+    expect(result.current.saveError).toBeNull();
   });
 
   it('retries the latest draft and clears its pending auto-save timer', async () => {
