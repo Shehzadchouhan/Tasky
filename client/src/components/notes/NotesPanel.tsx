@@ -568,31 +568,32 @@ export function NotesPanel({
                 {/* Save Status Badge */}
                 <div className="flex items-center gap-1.5 text-xs">
                   {status === 'saving' && (
-                    <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                    <span role="status" className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
                       Saving...
                     </span>
                   )}
                   {status === 'unsaved' && (
-                    <span className="text-amber-600 dark:text-amber-400">
+                    <span role="status" className="text-amber-600 dark:text-amber-400">
                       Unsaved changes
                     </span>
                   )}
                   {status === 'saved' && (
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span role="status" className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                       <Check className="w-3.5 h-3.5" />
                       Saved
                     </span>
                   )}
                   {status === 'error' && !hasConflict && (
-                    <div className="flex items-center gap-1.5">
+                    <div role="alert" className="flex items-center gap-1.5">
                       <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-medium">
                         <AlertCircle className="w-3.5 h-3.5" />
-                        Error
+                        Save failed
                       </span>
                       <button
                         type="button"
-                        onClick={retrySave}
+                        onClick={() => void retrySave()}
+                        aria-label="Retry saving note"
                         className="text-xs underline text-slate-500 hover:text-slate-800 dark:hover:text-white"
                       >
                         Retry

@@ -49,6 +49,10 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
 
     // Initial state is saved
     expect(result.current.status).toBe('saved');
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(notesApi.updateNote).not.toHaveBeenCalled();
 
     // User types in title
     act(() => {
@@ -78,6 +82,53 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
       baseVersion: 1,
     });
     expect(handleNoteUpdated).toHaveBeenCalledWith(updatedNote);
+    expect(result.current.status).toBe('saved');
+  });
+
+  it('keeps newer edits unsaved when an earlier request completes before their debounce', async () => {
+    let resolveFirstSave!: (value: { note: Note }) => void;
+    const firstSave = new Promise<{ note: Note }>((resolve) => {
+      resolveFirstSave = resolve;
+    });
+    vi.mocked(notesApi.updateNote)
+      .mockReturnValueOnce(firstSave)
+      .mockResolvedValueOnce({
+        note: { ...sampleNote, title: 'Latest title', version: 3 },
+      });
+
+    const { result } = renderHook(() =>
+      useNoteAutoSave({ note: sampleNote, onNoteUpdated: vi.fn() })
+    );
+
+    act(() => result.current.updateTitle('First title'));
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(result.current.status).toBe('saving');
+
+    act(() => {
+      result.current.updateTitle('Latest title');
+      vi.advanceTimersByTime(1000);
+    });
+
+    await act(async () => {
+      resolveFirstSave({ note: { ...sampleNote, title: 'First title', version: 2 } });
+      await firstSave;
+    });
+    expect(result.current.status).toBe('unsaved');
+    expect(notesApi.updateNote).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(notesApi.updateNote).toHaveBeenCalledTimes(2);
+    expect(notesApi.updateNote).toHaveBeenLastCalledWith('note-123', {
+      title: 'Latest title',
+      category: '',
+      content: sampleNote.content,
+      baseVersion: 2,
+    });
     expect(result.current.status).toBe('saved');
   });
 
@@ -266,6 +317,55 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     });
 
     expect(result.current.status).toBe('saved');
+  });
+
+  it('retries the latest draft and clears its pending auto-save timer', async () => {
+    let rejectFirstSave!: (error: Error) => void;
+    const firstSave = new Promise<{ note: Note }>((_resolve, reject) => {
+      rejectFirstSave = reject;
+    });
+    vi.mocked(notesApi.updateNote)
+      .mockReturnValueOnce(firstSave)
+      .mockResolvedValueOnce({
+        note: { ...sampleNote, title: 'Latest draft', version: 2 },
+      });
+
+    const { result } = renderHook(() =>
+      useNoteAutoSave({ note: sampleNote, onNoteUpdated: vi.fn() })
+    );
+
+    act(() => result.current.updateTitle('First draft'));
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+    act(() => {
+      result.current.updateTitle('Latest draft');
+      vi.advanceTimersByTime(500);
+    });
+
+    await act(async () => {
+      rejectFirstSave(new ApiClientError('Server Error', 500));
+      await firstSave.catch(() => undefined);
+    });
+    expect(result.current.status).toBe('error');
+
+    await act(async () => {
+      await result.current.retrySave();
+    });
+
+    expect(notesApi.updateNote).toHaveBeenCalledTimes(2);
+    expect(notesApi.updateNote).toHaveBeenLastCalledWith('note-123', {
+      title: 'Latest draft',
+      category: '',
+      content: sampleNote.content,
+      baseVersion: 1,
+    });
+    expect(result.current.status).toBe('saved');
+
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(notesApi.updateNote).toHaveBeenCalledTimes(2);
   });
 
   it('flushes pending save when switching notes or manual flush is invoked', async () => {

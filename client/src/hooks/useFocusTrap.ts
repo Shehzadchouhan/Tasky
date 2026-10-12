@@ -17,6 +17,11 @@ export function useFocusTrap({
   initialFocusRef,
 }: UseFocusTrapOptions) {
   const triggerElementRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -55,7 +60,7 @@ export function useFocusTrap({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -89,5 +94,5 @@ export function useFocusTrap({
       clearTimeout(timer);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose, containerRef, initialFocusRef]);
+  }, [isOpen, containerRef, initialFocusRef]);
 }

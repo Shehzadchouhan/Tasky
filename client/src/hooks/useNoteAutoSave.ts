@@ -5,6 +5,17 @@ import type { Note, NoteSaveStatus } from '../types/note.types.ts';
 
 const AUTO_SAVE_DEBOUNCE_MS = 1500;
 
+interface NotePayload {
+  title: string;
+  category: string;
+  content: Record<string, any>;
+}
+
+const arePayloadsEqual = (left: NotePayload, right: NotePayload): boolean =>
+  left.title === right.title &&
+  left.category === right.category &&
+  JSON.stringify(left.content) === JSON.stringify(right.content);
+
 interface UseNoteAutoSaveOptions {
   note: Note | null;
   onNoteUpdated: (updatedNote: Note) => void;
@@ -28,17 +39,22 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
   const lastSaveSucceededRef = useRef(true);
   const inFlightRef = useRef(false);
   const savePromiseRef = useRef<Promise<void> | null>(null);
-  const pendingPayloadRef = useRef<{ title: string; category: string; content: Record<string, any> } | null>(null);
-  const inFlightPayloadRef = useRef<{
-    title: string;
-    category: string;
-    content: Record<string, any>;
-  } | null>(null);
+  const pendingPayloadRef = useRef<NotePayload | null>(null);
+  const inFlightPayloadRef = useRef<NotePayload | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   titleRef.current = title;
   categoryRef.current = category;
   contentRef.current = content;
+
+  const getCurrentPayload = useCallback(
+    (): NotePayload => ({
+      title: titleRef.current,
+      category: categoryRef.current,
+      content: contentRef.current,
+    }),
+    []
+  );
 
   // When active note changes, reset local state
   useEffect(() => {
@@ -78,11 +94,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
   }, [note?.id, note?.version]);
 
   const executeSave = useCallback(
-    async function executeNoteSave(payloadToSave: {
-      title: string;
-      category: string;
-      content: Record<string, any>;
-    }) {
+    async function executeNoteSave(payloadToSave: NotePayload) {
       const noteId = activeNoteIdRef.current;
       if (!noteId) return;
 
@@ -108,11 +120,12 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
           pendingPayloadRef.current = null;
           await executeNoteSave(nextPayload);
         } else {
-          isDirtyRef.current = false;
-          lastSaveSucceededRef.current = true;
-          setStatus('saved');
           inFlightRef.current = false;
           inFlightPayloadRef.current = null;
+          const hasUnpersistedChanges = !arePayloadsEqual(payloadToSave, getCurrentPayload());
+          isDirtyRef.current = hasUnpersistedChanges;
+          lastSaveSucceededRef.current = !hasUnpersistedChanges;
+          setStatus(hasUnpersistedChanges ? 'unsaved' : 'saved');
         }
       } catch (err) {
         inFlightRef.current = false;
@@ -129,11 +142,11 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
         }
       }
     },
-    [onNoteUpdated]
+    [getCurrentPayload, onNoteUpdated]
   );
 
   const startSave = useCallback(
-    (payload: { title: string; category: string; content: Record<string, any> }) => {
+    (payload: NotePayload) => {
       const promise = executeSave(payload);
       savePromiseRef.current = promise;
       void promise.then(
@@ -159,14 +172,15 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      const payload = { title: titleRef.current, category: categoryRef.current, content: contentRef.current };
+      debounceTimerRef.current = null;
+      const payload = getCurrentPayload();
       if (inFlightRef.current) {
         pendingPayloadRef.current = payload;
       } else {
         void startSave(payload);
       }
     }, AUTO_SAVE_DEBOUNCE_MS);
-  }, [hasConflict, startSave]);
+  }, [getCurrentPayload, hasConflict, startSave]);
 
   const updateTitle = useCallback(
     (newTitle: string) => {
@@ -207,7 +221,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       return lastSaveSucceededRef.current;
     }
 
-    const payload = { title: titleRef.current, category: categoryRef.current, content: contentRef.current };
+    const payload = getCurrentPayload();
     if (inFlightRef.current) {
       const inFlightPayload = inFlightPayloadRef.current;
       if (
@@ -225,7 +239,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       await startSave(payload);
       return lastSaveSucceededRef.current;
     }
-  }, [hasConflict, startSave]);
+  }, [getCurrentPayload, hasConflict, startSave]);
 
   // Window exit / beforeunload guard with keepalive fetch
   useEffect(() => {
@@ -309,14 +323,24 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
     }
   }, [startSave]);
 
-  const retrySave = useCallback(() => {
+  const retrySave = useCallback(async () => {
     if (!activeNoteIdRef.current) return;
-    void startSave({
-      title: titleRef.current,
-      category: categoryRef.current,
-      content: contentRef.current,
-    });
-  }, [startSave]);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
+    const payload = getCurrentPayload();
+    pendingPayloadRef.current = null;
+    isDirtyRef.current = true;
+    if (inFlightRef.current) {
+      pendingPayloadRef.current = payload;
+      await savePromiseRef.current;
+      return;
+    }
+
+    await startSave(payload);
+  }, [getCurrentPayload, startSave]);
 
   return {
     title,
