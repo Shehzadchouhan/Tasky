@@ -25,6 +25,9 @@ const ALLOWED_NODE_TYPES = new Set([
   'codeBlock',
   'hardBreak',
   'horizontalRule',
+  'image',
+  'video',
+  'audio',
 ]);
 
 const ALLOWED_MARKS = new Set(['bold', 'italic', 'strike', 'code', 'link']);
@@ -43,6 +46,7 @@ const BLOCK_TYPES = new Set([
 
 const FORBIDDEN_PROTOCOLS = /^(?:javascript|data|vbscript):/i;
 const ALLOWED_LINK_PROTOCOLS = /^(?:https?:\/\/|mailto:)/i;
+const MEDIA_PATH = /^\/(?:[^/?#]+\/)*notes\/media\/[a-f\d]{24}$/i;
 
 /**
  * Validates a TipTap JSON document against strict schema constraints:
@@ -149,6 +153,49 @@ export function validateTipTapDoc(doc: unknown): void {
       for (const k of keys) {
         if (k !== 'type') {
           throw new Error(`Unknown property "${k}" on horizontalRule node`);
+        }
+      }
+      return;
+    }
+
+    if (nodeType === 'image' || nodeType === 'video' || nodeType === 'audio') {
+      for (const key of keys) {
+        if (key !== 'type' && key !== 'attrs') {
+          throw new Error(`Unknown property "${key}" on ${nodeType} node`);
+        }
+      }
+      if (!n.attrs || typeof n.attrs !== 'object' || Array.isArray(n.attrs)) {
+        throw new Error(`${nodeType} node requires media attributes`);
+      }
+      const allowedAttributes = nodeType === 'image' ? ['src', 'alt', 'title'] : ['src'];
+      for (const key of Object.keys(n.attrs)) {
+        if (!allowedAttributes.includes(key)) {
+          throw new Error(`Unknown attribute "${key}" on ${nodeType} node`);
+        }
+      }
+      if (typeof n.attrs.src !== 'string' || n.attrs.src.length > 2048) {
+        throw new Error(`${nodeType} source must be a valid media URL`);
+      }
+      let mediaUrl: URL;
+      try {
+        mediaUrl = new URL(n.attrs.src, 'https://taskly.invalid');
+      } catch {
+        throw new Error(`${nodeType} source must be a valid media URL`);
+      }
+      if (
+        !['http:', 'https:'].includes(mediaUrl.protocol) ||
+        !MEDIA_PATH.test(mediaUrl.pathname) ||
+        mediaUrl.search ||
+        mediaUrl.hash
+      ) {
+        throw new Error(`${nodeType} source must reference uploaded note media`);
+      }
+      if (nodeType === 'image') {
+        for (const attribute of ['alt', 'title']) {
+          const value = n.attrs[attribute];
+          if (value !== undefined && value !== null && (typeof value !== 'string' || value.length > 500)) {
+            throw new Error(`Image ${attribute} must be a string no longer than 500 characters`);
+          }
         }
       }
       return;

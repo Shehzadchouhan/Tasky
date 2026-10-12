@@ -65,11 +65,11 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-slate-50 dark:bg-[#1e1e2f] transition-colors">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-transparent transition-colors">
       <div className="w-full max-w-md flex flex-col gap-6">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6c63ff] to-[#5750d6] flex items-center justify-center text-white shadow-lg shadow-[#6c63ff]/25 mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-neutral-700 to-neutral-950 dark:from-neutral-200 dark:to-white flex items-center justify-center text-white dark:text-neutral-900 shadow-lg shadow-black/20 mb-3">
             <CheckSquare className="w-7 h-7" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
@@ -81,7 +81,7 @@ export function LoginPage() {
         </div>
 
         {/* Card Form */}
-        <div className="bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <div className="bg-white/90 dark:bg-neutral-900/85 border border-slate-200/80 dark:border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-sm">
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
             {errors.general && (
               <div
@@ -129,7 +129,7 @@ export function LoginPage() {
             Don&apos;t have an account?{' '}
             <Link
               to="/register"
-              className="font-semibold text-[#6c63ff] hover:text-[#5750d6] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff] rounded-xs"
+              className="font-semibold text-slate-800 dark:text-slate-200 hover:text-black dark:hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 rounded-xs"
             >
               Create an account
             </Link>

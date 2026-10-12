@@ -52,7 +52,7 @@ export function TaskControls({
     <div
       role="group"
       aria-label="View mode toggle"
-      className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 shrink-0"
+      className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-white/10 shrink-0"
     >
       <button
         type="button"
@@ -63,7 +63,7 @@ export function TaskControls({
         title="List view"
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
           view === 'list'
-            ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
+            ? 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 shadow-xs'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
@@ -79,7 +79,7 @@ export function TaskControls({
         title="Board view"
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
           view === 'board'
-            ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
+            ? 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 shadow-xs'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
@@ -95,7 +95,7 @@ export function TaskControls({
         title="Stats view"
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
           view === 'stats'
-            ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
+            ? 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 shadow-xs'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
@@ -118,7 +118,7 @@ export function TaskControls({
   }
 
   return (
-    <div className="w-full flex flex-col gap-3.5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs">
+    <div className="w-full flex flex-col gap-3.5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-neutral-800 border border-slate-200/80 dark:border-white/10 shadow-xs">
       {/* Top Row: Search, View Toggle, and Sort Controls */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         {/* Search Input */}
@@ -136,14 +136,14 @@ export function TaskControls({
             placeholder="Search tasks by title..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-9 py-2 rounded-xl text-sm bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:border-[#6c63ff] focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 transition-all"
+            className="w-full pl-10 pr-9 py-2 rounded-xl text-sm bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:border-neutral-500 focus-visible:ring-2 focus-visible:ring-neutral-500/30 transition-all"
           />
           {search && (
             <button
               type="button"
               onClick={() => onSearchChange('')}
               aria-label="Clear search text"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -163,7 +163,7 @@ export function TaskControls({
               id="task-sort-select"
               value={sort}
               onChange={(e) => onSortChange(e.target.value as TaskSortField)}
-              className="px-3 py-2 rounded-xl text-sm bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:border-[#6c63ff] focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 cursor-pointer"
+              className="px-3 py-2 rounded-xl text-sm bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:border-neutral-500 focus-visible:ring-2 focus-visible:ring-neutral-500/30 cursor-pointer"
             >
               <option value="createdAt">Date Created</option>
               <option value="dueDate">Due Date</option>
@@ -174,7 +174,7 @@ export function TaskControls({
               type="button"
               onClick={onOrderToggle}
               aria-label={`Sort order: currently ${order === 'asc' ? 'ascending' : 'descending'}. Click to toggle.`}
-              className="p-2 rounded-xl bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]"
+              className="p-2 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500"
               title={`Sort order: ${order.toUpperCase()}`}
             >
               <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
@@ -195,7 +195,7 @@ export function TaskControls({
               id="status-filter"
               value={status}
               onChange={(e) => onStatusChange(e.target.value as TaskStatus | 'all')}
-              className="px-2.5 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500/30 cursor-pointer"
             >
               <option value="all">All</option>
               <option value="todo">To Do</option>
@@ -214,7 +214,7 @@ export function TaskControls({
             id="category-filter"
             value={category}
             onChange={(e) => onCategoryChange(e.target.value as TaskCategory | 'all')}
-            className="px-2.5 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 cursor-pointer"
+            className="px-2.5 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500/30 cursor-pointer"
           >
             <option value="all">All</option>
             <option value="Work">Work</option>
@@ -234,7 +234,7 @@ export function TaskControls({
             id="priority-filter"
             value={priority}
             onChange={(e) => onPriorityChange(e.target.value as TaskPriority | 'all')}
-            className="px-2.5 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 cursor-pointer"
+            className="px-2.5 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500/30 cursor-pointer"
           >
             <option value="all">All</option>
             <option value="high">High</option>
@@ -248,7 +248,7 @@ export function TaskControls({
           <button
             type="button"
             onClick={onResetFilters}
-            className="ml-auto text-xs font-semibold text-[#6c63ff] hover:text-[#5750d6] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff] rounded-sm cursor-pointer"
+            className="ml-auto text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 rounded-sm cursor-pointer"
           >
             Reset filters
           </button>

@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import { useId, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap.ts';
 
@@ -9,6 +9,7 @@ export interface ModalProps {
   description?: string;
   children: ReactNode;
   initialFocusRef?: React.RefObject<HTMLElement | null>;
+  className?: string;
 }
 
 export function Modal({
@@ -18,10 +19,12 @@ export function Modal({
   description,
   children,
   initialFocusRef,
+  className = '',
 }: ModalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const titleId = 'modal-title';
-  const descId = 'modal-desc';
+  const id = useId();
+  const titleId = `${id}-modal-title`;
+  const descId = `${id}-modal-desc`;
 
   useFocusTrap({
     isOpen,
@@ -49,7 +52,7 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
-        className="relative z-10 w-full max-w-lg rounded-2xl bg-white dark:bg-[#252538] border border-slate-200 dark:border-white/10 shadow-2xl p-6 sm:p-7 text-left transition-all duration-200 animate-in fade-in zoom-in-95 focus:outline-none"
+        className={`relative z-10 w-full max-w-lg rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-white/10 shadow-2xl p-6 sm:p-7 text-left transition-all duration-200 animate-in fade-in zoom-in-95 focus:outline-none ${className}`}
       >
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
@@ -72,7 +75,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff]"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
           >
             <X className="w-5 h-5" />
           </button>

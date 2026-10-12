@@ -18,6 +18,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
   const sampleNote: Note = {
     id: 'note-123',
     title: 'Initial Title',
+    category: '',
     content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Initial body' }] }] },
     plainText: 'Initial body',
     version: 1,
@@ -72,11 +73,62 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     expect(notesApi.updateNote).toHaveBeenCalledTimes(1);
     expect(notesApi.updateNote).toHaveBeenCalledWith('note-123', {
       title: 'Updated Title',
+      category: '',
       content: sampleNote.content,
       baseVersion: 1,
     });
     expect(handleNoteUpdated).toHaveBeenCalledWith(updatedNote);
     expect(result.current.status).toBe('saved');
+  });
+
+  it('saves note category changes with the current note version', async () => {
+    vi.mocked(notesApi.updateNote).mockResolvedValueOnce({
+      note: { ...sampleNote, category: 'Work', version: 2 },
+    });
+    const { result } = renderHook(() =>
+      useNoteAutoSave({ note: sampleNote, onNoteUpdated: vi.fn() })
+    );
+
+    act(() => result.current.updateCategory('Work'));
+    await act(async () => {
+      vi.advanceTimersByTime(800);
+    });
+
+    expect(notesApi.updateNote).toHaveBeenCalledWith('note-123', {
+      title: 'Initial Title',
+      category: 'Work',
+      content: sampleNote.content,
+      baseVersion: 1,
+    });
+  });
+
+  it('waits for an in-flight save on close without sending a duplicate update', async () => {
+    let resolveSave!: (value: { note: Note }) => void;
+    const pendingSave = new Promise<{ note: Note }>((resolve) => {
+      resolveSave = resolve;
+    });
+    vi.mocked(notesApi.updateNote).mockReturnValueOnce(pendingSave);
+
+    const { result } = renderHook(() =>
+      useNoteAutoSave({ note: sampleNote, onNoteUpdated: vi.fn() })
+    );
+    act(() => result.current.updateTitle('Saving now'));
+    await act(async () => {
+      vi.advanceTimersByTime(800);
+    });
+
+    let flushPromise!: Promise<boolean>;
+    act(() => {
+      flushPromise = result.current.flush();
+    });
+    expect(notesApi.updateNote).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveSave({ note: { ...sampleNote, title: 'Saving now', version: 2 } });
+      await flushPromise;
+    });
+    expect(await flushPromise).toBe(true);
+    expect(notesApi.updateNote).toHaveBeenCalledTimes(1);
   });
 
   it('does not run parallel saves on rapid consecutive edits; queues latest content for second save', async () => {
@@ -141,6 +193,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     expect(notesApi.updateNote).toHaveBeenCalledTimes(2);
     expect(notesApi.updateNote).toHaveBeenLastCalledWith('note-123', {
       title: 'Final Title',
+      category: '',
       content: sampleNote.content,
       baseVersion: 2,
     });
@@ -207,6 +260,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     expect(notesApi.updateNote).toHaveBeenCalledTimes(1);
     expect(notesApi.updateNote).toHaveBeenCalledWith('note-123', {
       title: 'Flushed Title',
+      category: '',
       content: sampleNote.content,
       baseVersion: 1,
     });
@@ -262,6 +316,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     expect(notesApi.getNoteById).toHaveBeenCalledWith('note-123');
     expect(notesApi.updateNote).toHaveBeenCalledWith('note-123', {
       title: 'Another Edit During Conflict',
+      category: '',
       content: sampleNote.content,
       baseVersion: 3, // uses updated baseVersion from server
     });

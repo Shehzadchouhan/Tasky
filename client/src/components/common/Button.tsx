@@ -24,7 +24,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#6c63ff] active:scale-[0.98]';
+      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500 active:scale-[0.98]';
 
     const sizeStyles = {
       sm: 'px-3 py-1.5 text-xs gap-1.5',
@@ -34,11 +34,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles = {
       primary:
-        'bg-[#6c63ff] hover:bg-[#5750d6] text-white shadow-md shadow-[#6c63ff]/20 hover:shadow-[#6c63ff]/30 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#1e1e2f]',
+        'bg-neutral-900 hover:bg-neutral-700 text-white shadow-md shadow-black/15 hover:shadow-black/25 focus-visible:ring-offset-white dark:bg-neutral-100 dark:hover:bg-white dark:text-neutral-900 dark:focus-visible:ring-offset-neutral-950',
       secondary:
-        'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300/80 dark:bg-[#2a2a3b] dark:hover:bg-[#36364d] dark:text-slate-200 dark:border-white/10',
+        'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300/80 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-slate-200 dark:border-white/10',
       danger:
-        'bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/20 focus-visible:ring-rose-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#1e1e2f]',
+        'bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/20 focus-visible:ring-rose-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-950',
       ghost:
         'bg-transparent hover:bg-slate-200/60 text-slate-700 dark:text-slate-300 dark:hover:bg-white/10',
     };

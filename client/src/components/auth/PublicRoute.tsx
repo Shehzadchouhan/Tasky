@@ -7,7 +7,7 @@ export function PublicRoute() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#1e1e2f]">
+      <div className="min-h-screen flex items-center justify-center bg-transparent">
         <Spinner size="lg" label="Loading..." />
       </div>
     );

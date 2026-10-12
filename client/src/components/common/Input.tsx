@@ -32,10 +32,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             clsx(
               'w-full px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150',
               'bg-white border text-slate-900 placeholder:text-slate-400',
-              'dark:bg-[#1e1e2f] dark:text-slate-100 dark:placeholder:text-slate-500',
+              'dark:bg-neutral-950 dark:text-slate-100 dark:placeholder:text-slate-500',
               error
                 ? 'border-rose-500 focus-visible:border-rose-500 focus-visible:ring-2 focus-visible:ring-rose-500/30'
-                : 'border-slate-300 dark:border-white/10 focus-visible:border-[#6c63ff] focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30',
+                : 'border-slate-300 dark:border-white/10 focus-visible:border-slate-500 focus-visible:ring-2 focus-visible:ring-slate-500/30',
               'focus-visible:outline-none',
               className
             )

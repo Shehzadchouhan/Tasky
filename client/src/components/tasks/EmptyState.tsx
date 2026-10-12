@@ -13,7 +13,7 @@ export function EmptyState({ isFiltered = false, onClearFilters, onCreateTask }:
       data-testid="empty-state"
       className="flex flex-col items-center justify-center text-center p-8 sm:p-12 rounded-2xl border border-dashed border-slate-300 dark:border-white/10 bg-white/40 dark:bg-[#252538]/40 my-6"
     >
-      <div className="w-16 h-16 rounded-2xl bg-[#6c63ff]/10 text-[#6c63ff] flex items-center justify-center mb-4">
+      <div className="w-16 h-16 rounded-2xl bg-neutral-500/10 text-neutral-700 dark:text-neutral-200 flex items-center justify-center mb-4">
         <CheckCircle2 className="w-8 h-8" />
       </div>
 

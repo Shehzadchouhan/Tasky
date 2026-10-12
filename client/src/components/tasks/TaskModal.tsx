@@ -164,7 +164,7 @@ function TaskModalForm({ taskToEdit, initialTitle, onSubmit, onClose, isSubmitti
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={1000}
-          className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150 bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 dark:bg-[#1e1e2f] dark:border-white/10 dark:text-slate-100 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:border-[#6c63ff] focus-visible:ring-2 focus-visible:ring-[#6c63ff]/30 resize-none"
+          className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150 bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 dark:bg-neutral-950 dark:border-white/10 dark:text-slate-100 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:border-neutral-500 focus-visible:ring-2 focus-visible:ring-neutral-500/30 resize-none"
         />
         {errors.description && (
           <p className="text-xs text-rose-500 font-medium">{errors.description}</p>

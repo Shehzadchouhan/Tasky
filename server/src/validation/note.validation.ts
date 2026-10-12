@@ -43,6 +43,7 @@ export const createNoteSchema = z
       .trim()
       .max(120, 'Title cannot exceed 120 characters')
       .optional(),
+    category: z.string().trim().max(40, 'Category cannot exceed 40 characters').optional(),
     content: tipTapContentSchema.optional(),
   })
   .strict();
@@ -54,6 +55,7 @@ export const updateNoteSchema = z
       .trim()
       .max(120, 'Title cannot exceed 120 characters')
       .optional(),
+    category: z.string().trim().max(40, 'Category cannot exceed 40 characters').optional(),
     content: tipTapContentSchema.optional(),
     baseVersion: z
       .number()
@@ -61,9 +63,10 @@ export const updateNoteSchema = z
   })
   .strict()
   .refine(
-    (data) => data.title !== undefined || data.content !== undefined,
+    (data) =>
+      data.title !== undefined || data.category !== undefined || data.content !== undefined,
     {
-      message: 'Request body must contain title or content to update',
+      message: 'Request body must contain title, category, or content to update',
     }
   );
 
@@ -73,8 +76,22 @@ export const noteQuerySchema = z
       .string()
       .max(100, 'Search query cannot exceed 100 characters')
       .optional(),
+    category: z.string().max(40).optional(),
     page: z.coerce.number().int().min(1).optional().default(1),
     limit: z.coerce.number().int().min(1).max(50, 'Limit cannot exceed 50').optional().default(20),
+  })
+  .strict();
+
+export const createNoteCategorySchema = z
+  .object({
+    name: z.string().trim().min(1, 'Category name is required').max(40),
+  })
+  .strict();
+
+export const renameNoteCategorySchema = z
+  .object({
+    oldName: z.string().trim().min(1).max(40),
+    name: z.string().trim().min(1, 'Category name is required').max(40),
   })
   .strict();
 

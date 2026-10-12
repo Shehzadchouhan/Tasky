@@ -1,21 +1,41 @@
-import { apiClient } from './client.ts';
+import { apiClient, apiUrlFor } from './client.ts';
 import type {
   NoteListResponse,
   SingleNoteResponse,
   CreateNoteInput,
   UpdateNoteInput,
   NoteQueryParams,
+  NoteCategoriesResponse,
 } from '../types/note.types.ts';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const notesApi = {
+  uploadMedia: async (noteId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('noteId', noteId);
+    formData.append('file', file);
+    const response = await apiClient<{
+      media: { id: string; originalName: string; mimeType: string; size: number };
+    }>('/notes/media', {
+      method: 'POST',
+      body: formData,
+    });
+    return {
+      ...response.media,
+      url: apiUrlFor(`/notes/media/${response.media.id}`),
+    };
+  },
+
   getNotes: async (params?: NoteQueryParams): Promise<NoteListResponse> => {
     const searchParams = new URLSearchParams();
 
     if (params) {
       if (params.q && params.q.trim()) {
         searchParams.set('q', params.q.trim());
+      }
+      if (params.category !== undefined) {
+        searchParams.set('category', params.category);
       }
       if (params.page !== undefined) {
         searchParams.set('page', String(params.page));
@@ -32,6 +52,24 @@ export const notesApi = {
 
   getNoteById: async (id: string): Promise<SingleNoteResponse> => {
     return apiClient<SingleNoteResponse>(`/notes/${id}`, { method: 'GET' });
+  },
+
+  getCategories: async (): Promise<NoteCategoriesResponse> => {
+    return apiClient<NoteCategoriesResponse>('/notes/categories', { method: 'GET' });
+  },
+
+  createCategory: async (name: string): Promise<NoteCategoriesResponse> => {
+    return apiClient<NoteCategoriesResponse>('/notes/categories', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  },
+
+  renameCategory: async (oldName: string, name: string): Promise<NoteCategoriesResponse> => {
+    return apiClient<NoteCategoriesResponse>('/notes/categories', {
+      method: 'PATCH',
+      body: JSON.stringify({ oldName, name }),
+    });
   },
 
   createNote: async (data: CreateNoteInput): Promise<SingleNoteResponse> => {

@@ -13,6 +13,11 @@ import {
   Quote,
   SquareCode,
   Link as LinkIcon,
+  ImagePlus,
+  Video,
+  AudioLines,
+  Mic,
+  Square,
   Undo,
   Redo,
 } from 'lucide-react';
@@ -20,9 +25,20 @@ import {
 interface NoteToolbarProps {
   editor: Editor | null;
   onOpenLinkModal: () => void;
+  onAddMedia: (kind: 'image' | 'video' | 'audio') => void;
+  onToggleAudioRecording: () => void;
+  isRecordingAudio: boolean;
+  isUploadingMedia: boolean;
 }
 
-export function NoteToolbar({ editor, onOpenLinkModal }: NoteToolbarProps) {
+export function NoteToolbar({
+  editor,
+  onOpenLinkModal,
+  onAddMedia,
+  onToggleAudioRecording,
+  isRecordingAudio,
+  isUploadingMedia,
+}: NoteToolbarProps) {
   if (!editor) {
     return null;
   }
@@ -206,6 +222,50 @@ export function NoteToolbar({ editor, onOpenLinkModal }: NoteToolbarProps) {
         className={btnClass(editor.isActive('link'))}
       >
         <LinkIcon className="w-4 h-4" />
+      </button>
+
+      <div className="w-px h-4 bg-slate-300 dark:bg-white/20 mx-1" aria-hidden="true" />
+
+      <button
+        type="button"
+        onClick={() => onAddMedia('image')}
+        disabled={isUploadingMedia}
+        aria-label="Add image"
+        className={btnClass(false, isUploadingMedia)}
+      >
+        <ImagePlus className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => onAddMedia('video')}
+        disabled={isUploadingMedia}
+        aria-label="Add video"
+        className={btnClass(false, isUploadingMedia)}
+      >
+        <Video className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => onAddMedia('audio')}
+        disabled={isUploadingMedia}
+        aria-label="Add audio"
+        className={btnClass(false, isUploadingMedia)}
+      >
+        <AudioLines className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={onToggleAudioRecording}
+        disabled={isUploadingMedia}
+        aria-label={isRecordingAudio ? 'Stop audio recording' : 'Start audio recording'}
+        aria-pressed={isRecordingAudio}
+        className={`${btnClass(isRecordingAudio, isUploadingMedia)} ${
+          isRecordingAudio ? 'text-red-600 dark:text-red-400' : ''
+        }`}
+      >
+        {isRecordingAudio
+          ? <Square className="w-4 h-4 fill-current" />
+          : <Mic className="w-4 h-4" />}
       </button>
     </div>
   );

@@ -34,6 +34,13 @@ export function useNoteQuery(
   });
 }
 
+export function useNoteCategoriesQuery() {
+  return useQuery({
+    queryKey: ['notes', 'categories'],
+    queryFn: () => notesApi.getCategories(),
+  });
+}
+
 export function useCreateNote() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -41,6 +48,30 @@ export function useCreateNote() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['notes', 'list'] });
       queryClient.setQueryData(['notes', 'detail', data.note.id], data);
+    },
+  });
+}
+
+export function useCreateNoteCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => notesApi.createCategory(name),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['notes', 'categories'], data);
+      queryClient.invalidateQueries({ queryKey: ['notes', 'list'] });
+    },
+  });
+}
+
+export function useRenameNoteCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ oldName, name }: { oldName: string; name: string }) =>
+      notesApi.renameCategory(oldName, name),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['notes', 'categories'], data);
+      queryClient.invalidateQueries({ queryKey: ['notes', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['notes', 'detail'] });
     },
   });
 }

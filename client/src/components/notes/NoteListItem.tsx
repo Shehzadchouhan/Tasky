@@ -13,7 +13,7 @@ export function NoteListItem({ note, isSelected, onSelect }: NoteListItemProps) 
       type="button"
       onClick={() => onSelect(note.id)}
       aria-selected={isSelected}
-      className={`w-full text-left p-3.5 rounded-xl transition-all border flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c63ff] ${
+      className={`w-full text-left p-3.5 rounded-xl transition-all border flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 ${
         isSelected
           ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800/80 shadow-xs'
           : 'bg-white dark:bg-[#252538]/60 border-slate-200/80 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 hover:bg-slate-50/50 dark:hover:bg-[#252538]'
@@ -31,6 +31,11 @@ export function NoteListItem({ note, isSelected, onSelect }: NoteListItemProps) 
       <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
         {note.snippet || <span className="italic text-slate-400">Empty note</span>}
       </p>
+      {note.category && (
+        <span className="w-fit mt-1 rounded-full bg-slate-100 dark:bg-white/10 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300">
+          {note.category}
+        </span>
+      )}
     </button>
   );
 }

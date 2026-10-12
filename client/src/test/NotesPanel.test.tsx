@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -17,6 +18,9 @@ vi.mock('../api/notes.api.ts', () => ({
     createNote: vi.fn(),
     updateNote: vi.fn(),
     deleteNote: vi.fn(),
+    getCategories: vi.fn(),
+    createCategory: vi.fn(),
+    renameCategory: vi.fn(),
     flushNoteUnload: vi.fn(),
   },
 }));
@@ -44,12 +48,14 @@ describe('NotesPanel Component & Responsive Dashboard Integration', () => {
     {
       id: 'note-1',
       title: 'Sprint Planning',
+      category: '',
       snippet: 'Discussed tasks for phase 2 and team allocation.',
       updatedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15m ago
     },
     {
       id: 'note-2',
       title: 'Architecture Overview',
+      category: '',
       snippet: 'Diagram of microservices and DB connections.',
       updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2h ago
     },
@@ -58,6 +64,7 @@ describe('NotesPanel Component & Responsive Dashboard Integration', () => {
   const mockActiveNote: Note = {
     id: 'note-1',
     title: 'Sprint Planning',
+    category: '',
     content: {
       type: 'doc',
       content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Full note content' }] }],
@@ -84,6 +91,7 @@ describe('NotesPanel Component & Responsive Dashboard Integration', () => {
       totalPages: 1,
     });
     vi.mocked(notesApi.getNoteById).mockResolvedValue({ note: mockActiveNote });
+    vi.mocked(notesApi.getCategories).mockResolvedValue({ categories: [] });
   });
 
   const renderComponent = (ui: React.ReactNode) => {
@@ -122,6 +130,49 @@ describe('NotesPanel Component & Responsive Dashboard Integration', () => {
     // Check relative times
     expect(screen.getByText('15m ago')).toBeInTheDocument();
     expect(screen.getByText('2h ago')).toBeInTheDocument();
+  });
+
+  it('opens a selected note in a modal instead of showing an editor below the list', async () => {
+    const user = userEvent.setup();
+    function ControlledNotesPanel() {
+      const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+      return <NotesPanel selectedNoteId={selectedNoteId} onSelectNote={setSelectedNoteId} />;
+    }
+
+    renderComponent(<ControlledNotesPanel />);
+
+    await waitFor(() => expect(screen.getByText('Sprint Planning')).toBeInTheDocument());
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Sprint Planning/ }));
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Sprint Planning')).toBeInTheDocument();
+  });
+
+  it('creates, filters, and renames note categories', async () => {
+    const user = userEvent.setup();
+    vi.mocked(notesApi.createCategory).mockResolvedValueOnce({ categories: ['Work'] });
+    vi.mocked(notesApi.renameCategory).mockResolvedValueOnce({ categories: ['Projects'] });
+
+    renderComponent(<NotesPanel selectedNoteId={null} onSelectNote={vi.fn()} />);
+
+    await user.type(screen.getByRole('textbox', { name: 'New category name' }), 'Work');
+    await user.click(screen.getByRole('button', { name: 'Create category' }));
+    await waitFor(() => expect(notesApi.createCategory).toHaveBeenCalledWith('Work'));
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by category' }), 'Work');
+    await waitFor(() => {
+      expect(notesApi.getNotes).toHaveBeenLastCalledWith(
+        expect.objectContaining({ category: 'Work' })
+      );
+    });
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Category to rename' }), 'Work');
+    await user.type(screen.getByRole('textbox', { name: 'Renamed category name' }), 'Projects');
+    await user.click(screen.getByRole('button', { name: 'Rename category' }));
+    await waitFor(() => {
+      expect(notesApi.renameCategory).toHaveBeenCalledWith('Work', 'Projects');
+    });
   });
 
   it('asks for confirmation via accessible modal when delete is clicked, and performs deletion', async () => {
@@ -183,6 +234,40 @@ describe('NotesPanel Component & Responsive Dashboard Integration', () => {
     expect(tasksTab).toBeInTheDocument();
     expect(notesTab).toHaveAttribute('aria-selected', 'true');
     expect(tasksTab).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('switches dashboard tabs with a horizontal swipe but ignores vertical movement', async () => {
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <MemoryRouter initialEntries={['/']}>
+            <DashboardPage />
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    );
+
+    const panels = container.querySelector('.w-full.flex.flex-col.lg\\:flex-row');
+    expect(panels).not.toBeNull();
+    const notesTab = screen.getByRole('tab', { name: 'Notes' });
+    const tasksTab = screen.getByRole('tab', { name: 'Tasks' });
+
+    fireEvent.touchStart(panels!, { touches: [{ clientX: 240, clientY: 120 }] });
+    fireEvent.touchEnd(panels!, { changedTouches: [{ clientX: 150, clientY: 126 }] });
+    expect(tasksTab).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.touchStart(panels!, { touches: [{ clientX: 120, clientY: 120 }] });
+    fireEvent.touchEnd(panels!, { changedTouches: [{ clientX: 126, clientY: 220 }] });
+    expect(tasksTab).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.touchStart(panels!, { touches: [{ clientX: 120, clientY: 120 }] });
+    fireEvent.touchEnd(panels!, { changedTouches: [{ clientX: 220, clientY: 124 }] });
+    expect(notesTab).toHaveAttribute('aria-selected', 'true');
+
+    const tabList = screen.getByRole('tablist', { name: /View selection/i });
+    fireEvent.touchStart(tabList, { touches: [{ clientX: 220, clientY: 40 }] });
+    fireEvent.touchEnd(tabList, { changedTouches: [{ clientX: 150, clientY: 42 }] });
+    expect(tasksTab).toHaveAttribute('aria-selected', 'true');
   });
 
   it('remembers the collapsed state of the Notes panel in localStorage', async () => {

@@ -10,6 +10,7 @@ interface UseNoteAutoSaveOptions {
 
 export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions) {
   const [title, setTitle] = useState(note?.title || '');
+  const [category, setCategory] = useState(note?.category || '');
   const [content, setContent] = useState<Record<string, any>>(note?.content || { type: 'doc', content: [] });
   const [status, setStatus] = useState<NoteSaveStatus>('saved');
   const [hasConflict, setHasConflict] = useState(false);
@@ -19,13 +20,22 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
   const activeNoteIdRef = useRef<string | null>(note?.id || null);
   const currentVersionRef = useRef<number>(note?.version || 1);
   const titleRef = useRef(title);
+  const categoryRef = useRef(category);
   const contentRef = useRef(content);
   const isDirtyRef = useRef(false);
+  const lastSaveSucceededRef = useRef(true);
   const inFlightRef = useRef(false);
-  const pendingPayloadRef = useRef<{ title: string; content: Record<string, any> } | null>(null);
+  const savePromiseRef = useRef<Promise<void> | null>(null);
+  const pendingPayloadRef = useRef<{ title: string; category: string; content: Record<string, any> } | null>(null);
+  const inFlightPayloadRef = useRef<{
+    title: string;
+    category: string;
+    content: Record<string, any>;
+  } | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   titleRef.current = title;
+  categoryRef.current = category;
   contentRef.current = content;
 
   // When active note changes, reset local state
@@ -33,11 +43,13 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
     if (!note) {
       activeNoteIdRef.current = null;
       setTitle('');
+      setCategory('');
       setContent({ type: 'doc', content: [] });
       setStatus('saved');
       setHasConflict(false);
       setConflictVersion(null);
       isDirtyRef.current = false;
+      lastSaveSucceededRef.current = true;
       return;
     }
 
@@ -45,11 +57,13 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       activeNoteIdRef.current = note.id;
       currentVersionRef.current = note.version;
       setTitle(note.title);
+      setCategory(note.category || '');
       setContent(note.content || { type: 'doc', content: [] });
       setStatus('saved');
       setHasConflict(false);
       setConflictVersion(null);
       isDirtyRef.current = false;
+      lastSaveSucceededRef.current = true;
       pendingPayloadRef.current = null;
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -62,16 +76,23 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
   }, [note?.id, note?.version]);
 
   const executeSave = useCallback(
-    async (payloadToSave: { title: string; content: Record<string, any> }) => {
+    async function executeNoteSave(payloadToSave: {
+      title: string;
+      category: string;
+      content: Record<string, any>;
+    }) {
       const noteId = activeNoteIdRef.current;
       if (!noteId) return;
 
       inFlightRef.current = true;
+      inFlightPayloadRef.current = payloadToSave;
+      lastSaveSucceededRef.current = false;
       setStatus('saving');
 
       try {
         const res = await notesApi.updateNote(noteId, {
           title: payloadToSave.title,
+          category: payloadToSave.category,
           content: payloadToSave.content,
           baseVersion: currentVersionRef.current,
         });
@@ -83,14 +104,18 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
         if (pendingPayloadRef.current) {
           const nextPayload = pendingPayloadRef.current;
           pendingPayloadRef.current = null;
-          await executeSave(nextPayload);
+          await executeNoteSave(nextPayload);
         } else {
           isDirtyRef.current = false;
+          lastSaveSucceededRef.current = true;
           setStatus('saved');
           inFlightRef.current = false;
+          inFlightPayloadRef.current = null;
         }
       } catch (err) {
         inFlightRef.current = false;
+        inFlightPayloadRef.current = null;
+        lastSaveSucceededRef.current = false;
         if (err instanceof ApiClientError && (err.status === 409 || err.code === 'NOTE_CONFLICT')) {
           setHasConflict(true);
           // If server provided current version in error details or payload
@@ -105,6 +130,23 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
     [onNoteUpdated]
   );
 
+  const startSave = useCallback(
+    (payload: { title: string; category: string; content: Record<string, any> }) => {
+      const promise = executeSave(payload);
+      savePromiseRef.current = promise;
+      void promise.then(
+        () => {
+          if (savePromiseRef.current === promise) savePromiseRef.current = null;
+        },
+        () => {
+          if (savePromiseRef.current === promise) savePromiseRef.current = null;
+        }
+      );
+      return promise;
+    },
+    [executeSave]
+  );
+
   const scheduleAutoSave = useCallback(() => {
     if (hasConflict) return;
     isDirtyRef.current = true;
@@ -114,19 +156,28 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      const payload = { title: titleRef.current, content: contentRef.current };
+      const payload = { title: titleRef.current, category: categoryRef.current, content: contentRef.current };
       if (inFlightRef.current) {
         pendingPayloadRef.current = payload;
       } else {
-        executeSave(payload);
+        void startSave(payload);
       }
     }, 800);
-  }, [hasConflict, executeSave]);
+  }, [hasConflict, startSave]);
 
   const updateTitle = useCallback(
     (newTitle: string) => {
       setTitle(newTitle);
       titleRef.current = newTitle;
+      scheduleAutoSave();
+    },
+    [scheduleAutoSave]
+  );
+
+  const updateCategory = useCallback(
+    (newCategory: string) => {
+      setCategory(newCategory);
+      categoryRef.current = newCategory;
       scheduleAutoSave();
     },
     [scheduleAutoSave]
@@ -148,17 +199,30 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       debounceTimerRef.current = null;
     }
 
-    if (!isDirtyRef.current || hasConflict || !activeNoteIdRef.current) {
-      return;
+    if (hasConflict) return false;
+    if (!isDirtyRef.current || !activeNoteIdRef.current) {
+      return lastSaveSucceededRef.current;
     }
 
-    const payload = { title: titleRef.current, content: contentRef.current };
+    const payload = { title: titleRef.current, category: categoryRef.current, content: contentRef.current };
     if (inFlightRef.current) {
-      pendingPayloadRef.current = payload;
+      const inFlightPayload = inFlightPayloadRef.current;
+      if (
+        pendingPayloadRef.current ||
+        !inFlightPayload ||
+        payload.title !== inFlightPayload.title ||
+        payload.category !== inFlightPayload.category ||
+        payload.content !== inFlightPayload.content
+      ) {
+        pendingPayloadRef.current = payload;
+      }
+      await savePromiseRef.current;
+      return lastSaveSucceededRef.current;
     } else {
-      await executeSave(payload);
+      await startSave(payload);
+      return lastSaveSucceededRef.current;
     }
-  }, [hasConflict, executeSave]);
+  }, [hasConflict, startSave]);
 
   // Window exit / beforeunload guard with keepalive fetch
   useEffect(() => {
@@ -166,6 +230,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       if (isDirtyRef.current && activeNoteIdRef.current && !hasConflict) {
         notesApi.flushNoteUnload(activeNoteIdRef.current, {
           title: titleRef.current,
+          category: categoryRef.current,
           content: contentRef.current,
           baseVersion: currentVersionRef.current,
         });
@@ -189,6 +254,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       if (isDirtyRef.current && activeNoteIdRef.current && !hasConflict && !inFlightRef.current) {
         notesApi.flushNoteUnload(activeNoteIdRef.current, {
           title: titleRef.current,
+          category: categoryRef.current,
           content: contentRef.current,
           baseVersion: currentVersionRef.current,
         });
@@ -206,8 +272,10 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       const res = await notesApi.getNoteById(noteId);
       currentVersionRef.current = res.note.version;
       setTitle(res.note.title);
+      setCategory(res.note.category || '');
       setContent(res.note.content || { type: 'doc', content: [] });
       titleRef.current = res.note.title;
+      categoryRef.current = res.note.category || '';
       contentRef.current = res.note.content || { type: 'doc', content: [] };
       setHasConflict(false);
       setConflictVersion(null);
@@ -232,25 +300,31 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       currentVersionRef.current = latest.note.version;
       setHasConflict(false);
       setConflictVersion(null);
-      await executeSave({ title: titleRef.current, content: contentRef.current });
+      await startSave({ title: titleRef.current, category: categoryRef.current, content: contentRef.current });
     } catch {
       setStatus('error');
     }
-  }, [executeSave]);
+  }, [startSave]);
 
   const retrySave = useCallback(() => {
     if (!activeNoteIdRef.current) return;
-    executeSave({ title: titleRef.current, content: contentRef.current });
-  }, [executeSave]);
+    void startSave({
+      title: titleRef.current,
+      category: categoryRef.current,
+      content: contentRef.current,
+    });
+  }, [startSave]);
 
   return {
     title,
+    category,
     content,
     status,
     hasConflict,
     conflictVersion,
     reloadTrigger,
     updateTitle,
+    updateCategory,
     updateContent,
     flush,
     reloadLatest,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo, useRef, type TouchEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../components/common/Button.tsx';
@@ -10,7 +10,6 @@ import { TaskControls } from '../components/tasks/TaskControls.tsx';
 import { TaskPagination } from '../components/tasks/TaskPagination.tsx';
 import { EmptyState } from '../components/tasks/EmptyState.tsx';
 import { KanbanBoard } from '../components/tasks/KanbanBoard.tsx';
-import { StatsDashboard } from '../components/stats/StatsDashboard.tsx';
 import { TasklyAssistant } from '../components/assistant/TasklyAssistant.tsx';
 import { NotesPanel } from '../components/notes/NotesPanel.tsx';
 import { useTasksQuery, useCreateTask, useUpdateTask, useDeleteTask } from '../hooks/useTasks.ts';
@@ -30,6 +29,11 @@ import type {
 } from '../types/task.types.ts';
 
 const PAGE_LIMIT = 10;
+const StatsDashboard = lazy(() =>
+  import('../components/stats/StatsDashboard.tsx').then(({ StatsDashboard: dashboard }) => ({
+    default: dashboard,
+  }))
+);
 
 export function DashboardPage() {
   const { showToast } = useToast();
@@ -46,6 +50,8 @@ export function DashboardPage() {
   const pageParam = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
   const tabParam = (searchParams.get('tab') as 'notes' | 'tasks') || 'tasks';
   const selectedNoteIdParam = searchParams.get('note');
+  const swipeStartRef = useRef<{ x: number; y: number; target: EventTarget | null } | null>(null);
+  const tabSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
 
   // Persisted collapsible state for Notes panel on desktop
   const [isNotesCollapsed, setIsNotesCollapsed] = useState(() => {
@@ -94,6 +100,48 @@ export function DashboardPage() {
       },
       { replace: true }
     );
+  };
+
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    swipeStartRef.current = touch
+      ? { x: touch.clientX, y: touch.clientY, target: event.target }
+      : null;
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    const touch = event.changedTouches[0];
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+
+    const interactiveSelector =
+      'button, a, input, select, textarea, [contenteditable="true"], .ProseMirror';
+    const startedOn = start.target instanceof Element ? start.target : null;
+    const endedOn = event.target instanceof Element ? event.target : null;
+    if (startedOn?.closest(interactiveSelector) || endedOn?.closest(interactiveSelector)) return;
+
+    handleTabChange(deltaX < 0 ? 'tasks' : 'notes');
+  };
+
+  const handleTabTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    tabSwipeStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+  };
+
+  const handleTabTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const start = tabSwipeStartRef.current;
+    tabSwipeStartRef.current = null;
+    const touch = event.changedTouches[0];
+    if (!start || !touch) return;
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 35 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+    handleTabChange(deltaX < 0 ? 'tasks' : 'notes');
   };
 
   // Local state for search bar (to debounce)
@@ -304,16 +352,25 @@ export function DashboardPage() {
         <div
           role="tablist"
           aria-label="View selection"
-          className="inline-flex p-1 rounded-xl bg-slate-200/80 dark:bg-white/10 text-xs font-semibold"
+          aria-describedby="dashboard-swipe-hint"
+          onTouchStart={handleTabTouchStart}
+          onTouchEnd={handleTabTouchEnd}
+          className="relative grid w-52 max-w-[calc(100vw-2rem)] grid-cols-2 touch-pan-y select-none rounded-xl bg-slate-200/80 p-1 text-xs font-semibold dark:bg-white/10"
         >
+          <span
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-white shadow-xs transition-transform duration-200 dark:bg-neutral-800 ${
+              tabParam === 'tasks' ? 'translate-x-full' : ''
+            }`}
+          />
           <button
             type="button"
             role="tab"
             aria-selected={tabParam === 'notes'}
             onClick={() => handleTabChange('notes')}
-            className={`px-5 py-1.5 rounded-lg transition-all ${
+            className={`relative z-10 rounded-lg px-5 py-2 transition-colors ${
               tabParam === 'notes'
-                ? 'bg-white dark:bg-[#252538] text-slate-900 dark:text-white shadow-xs'
+                ? 'bg-white dark:bg-neutral-800 text-slate-900 dark:text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -324,19 +381,26 @@ export function DashboardPage() {
             role="tab"
             aria-selected={tabParam === 'tasks'}
             onClick={() => handleTabChange('tasks')}
-            className={`px-5 py-1.5 rounded-lg transition-all ${
+            className={`relative z-10 rounded-lg px-5 py-2 transition-colors ${
               tabParam === 'tasks'
-                ? 'bg-white dark:bg-[#252538] text-slate-900 dark:text-white shadow-xs'
+                ? 'bg-white dark:bg-neutral-800 text-slate-900 dark:text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Tasks
           </button>
         </div>
+        <span id="dashboard-swipe-hint" className="sr-only">
+          Tap the Notes or Tasks option, or slide this selector left or right to switch views.
+        </span>
       </div>
 
       {/* Main Dual-Panel Layout */}
-      <div className="w-full flex flex-col lg:flex-row gap-6 items-start">
+      <div
+        className="w-full flex flex-col lg:flex-row gap-6 items-start"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Left: Notes Panel (Desktop side-by-side or Mobile tab) */}
         <div
           className={`w-full lg:w-auto transition-all ${
@@ -406,12 +470,20 @@ export function DashboardPage() {
 
           {/* Main Content Area */}
           {isStatsView ? (
-            <StatsDashboard
-              onCreateTask={() => {
-                setTaskToEdit(null);
-                setIsTaskModalOpen(true);
-              }}
-            />
+            <Suspense
+              fallback={
+                <div role="status" className="flex min-h-64 items-center justify-center text-sm text-slate-600 dark:text-slate-300">
+                  Loading statistics…
+                </div>
+              }
+            >
+              <StatsDashboard
+                onCreateTask={() => {
+                  setTaskToEdit(null);
+                  setIsTaskModalOpen(true);
+                }}
+              />
+            </Suspense>
           ) : isBoardView ? (
             <KanbanBoard
               category={categoryParam}

@@ -1,10 +1,15 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { beforeAll, afterEach, afterAll } from 'vitest';
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test_secret_key_for_vitest_supertest_testing_12345';
 process.env.JWT_EXPIRES_IN = '7d';
+const mediaTestDirectory = mkdtempSync(path.join(tmpdir(), 'taskly-media-test-'));
+process.env.MEDIA_STORAGE_DIR = mediaTestDirectory;
 
 let mongod: MongoMemoryServer;
 
@@ -34,4 +39,5 @@ afterAll(async () => {
   if (mongod) {
     await mongod.stop();
   }
+  rmSync(mediaTestDirectory, { recursive: true, force: true });
 }, 30000);

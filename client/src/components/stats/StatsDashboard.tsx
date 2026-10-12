@@ -30,11 +30,11 @@ interface StatsDashboardProps {
 }
 
 const CATEGORY_COLORS: Record<TaskCategory, string> = {
-  Work: '#3b82f6',
-  Home: '#10b981',
-  Personal: '#8b5cf6',
-  Urgent: '#f43f5e',
-  none: '#64748b',
+  Work: '#52525b',
+  Home: '#71717a',
+  Personal: '#a1a1aa',
+  Urgent: '#27272a',
+  none: '#d4d4d8',
 };
 
 const CATEGORY_LABELS: Record<TaskCategory, string> = {
@@ -56,7 +56,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
         category: cat,
         label: CATEGORY_LABELS[cat] || cat,
         count: data.byCategory[cat] || 0,
-        color: CATEGORY_COLORS[cat] || '#6c63ff',
+        color: CATEGORY_COLORS[cat] || '#52525b',
       }))
       .filter((item) => item.count > 0);
   }, [data?.byCategory]);
@@ -141,7 +141,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
         data-testid="stats-empty"
         className="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 my-4 shadow-xs"
       >
-        <div className="w-16 h-16 rounded-2xl bg-[#6c63ff]/10 dark:bg-[#6c63ff]/20 flex items-center justify-center text-[#6c63ff] mb-4">
+        <div className="w-16 h-16 rounded-2xl bg-neutral-500/10 dark:bg-neutral-500/20 flex items-center justify-center text-neutral-700 dark:text-neutral-200 mb-4">
           <Calendar className="w-8 h-8" aria-hidden="true" />
         </div>
         <h3 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -252,20 +252,20 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Completion Rate
             </span>
-            <div className="w-9 h-9 rounded-xl bg-[#6c63ff]/10 dark:bg-[#6c63ff]/20 text-[#6c63ff] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-neutral-500/10 dark:bg-neutral-500/20 text-neutral-700 dark:text-neutral-200 flex items-center justify-center">
               <Percent className="w-4 h-4" aria-hidden="true" />
             </div>
           </div>
           <div className="mt-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-extrabold text-[#6c63ff]">
+              <span className="text-3xl font-extrabold text-neutral-700 dark:text-neutral-200">
                 {totals.completionRate}%
               </span>
             </div>
             {/* Visual progress bar */}
             <div className="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full mt-2 overflow-hidden">
               <div
-                className="bg-[#6c63ff] h-full rounded-full transition-all duration-500"
+                className="bg-neutral-700 dark:bg-neutral-200 h-full rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(100, Math.max(0, totals.completionRate))}%` }}
               />
             </div>
@@ -307,7 +307,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
                   aria-pressed={days === d}
                   className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                     days === d
-                      ? 'bg-white dark:bg-[#252538] text-[#6c63ff] shadow-xs'
+                      ? 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -351,7 +351,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
                       return (
                         <div className="p-2.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs shadow-lg border border-slate-700 dark:border-slate-200">
                           <p className="font-semibold">{item.date}</p>
-                          <p className="mt-0.5 text-[#6c63ff] font-bold">
+                          <p className="mt-0.5 text-neutral-700 dark:text-neutral-200 font-bold">
                             {item.count} {item.count === 1 ? 'task' : 'tasks'} completed
                           </p>
                         </div>
@@ -363,7 +363,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
                 <Bar
                   dataKey="count"
                   name="Completed"
-                  fill="#6c63ff"
+                  fill="#71717a"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={36}
                 />

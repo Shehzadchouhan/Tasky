@@ -23,6 +23,14 @@ export const setUnauthorizedHandler = (handler: UnauthorizedHandler | null) => {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
+export function apiUrlFor(endpoint: string): string {
+  const url = endpoint.startsWith('http')
+    ? endpoint
+    : `${BASE_URL.replace(/\/+$/, '')}/${endpoint.replace(/^\/+/, '')}`;
+  const origin = typeof window === 'undefined' ? 'http://localhost' : window.location.origin;
+  return new URL(url, origin).toString();
+}
+
 export interface RequestOptions extends RequestInit {
   skipAuthRedirect?: boolean;
 }
@@ -33,9 +41,7 @@ export async function apiClient<T>(
 ): Promise<T> {
   const { skipAuthRedirect = false, headers, ...restOptions } = options;
 
-  const url = endpoint.startsWith('http')
-    ? endpoint
-    : `${BASE_URL.replace(/\/+$/, '')}/${endpoint.replace(/^\/+/, '')}`;
+  const url = apiUrlFor(endpoint);
 
   const requestHeaders = new Headers(headers);
   if (!requestHeaders.has('Content-Type') && !(restOptions.body instanceof FormData)) {

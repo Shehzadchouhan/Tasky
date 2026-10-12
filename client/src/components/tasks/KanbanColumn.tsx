@@ -70,7 +70,7 @@ export function KanbanColumn({
     <div
       data-testid={`kanban-column-${status}`}
       className={`flex flex-col w-full md:w-80 lg:w-96 shrink-0 bg-slate-50/80 dark:bg-[#1a1a28] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xs transition-colors ${
-        isOver ? 'ring-2 ring-[#6c63ff] bg-[#6c63ff]/5' : ''
+        isOver ? 'ring-2 ring-neutral-500 bg-neutral-500/5' : ''
       }`}
     >
       {/* Column Header */}

@@ -5,6 +5,7 @@ export interface IUser {
   email: string;
   passwordHash: string;
   createdAt: Date;
+  noteCategories: string[];
 }
 
 export interface IUserDocument extends IUser, Document {}
@@ -31,6 +32,10 @@ const userSchema = new Schema<IUserDocument>({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  noteCategories: {
+    type: [String],
+    default: [],
   },
 });
 

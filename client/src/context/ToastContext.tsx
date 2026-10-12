@@ -49,13 +49,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 ? 'bg-emerald-950/90 border-emerald-700/60 text-emerald-100 dark:bg-emerald-950/90 dark:border-emerald-700/60 dark:text-emerald-100'
                 : toast.type === 'error'
                 ? 'bg-rose-950/90 border-rose-700/60 text-rose-100 dark:bg-rose-950/90 dark:border-rose-700/60 dark:text-rose-100'
-                : 'bg-[#252538]/95 border-[#6c63ff]/40 text-purple-100 dark:bg-[#252538]/95 dark:border-[#6c63ff]/40 dark:text-purple-100'
+                : 'bg-neutral-800/95 border-neutral-600/40 text-neutral-100 dark:bg-neutral-800/95 dark:border-neutral-600/40 dark:text-neutral-100'
             }`}
           >
             <span className="shrink-0 mt-0.5">
               {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-emerald-400" />}
               {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-400" />}
-              {toast.type === 'info' && <Info className="w-5 h-5 text-[#6c63ff]" />}
+              {toast.type === 'info' && <Info className="w-5 h-5 text-neutral-300" />}
             </span>
             <p className="flex-1 font-medium leading-snug">{toast.message}</p>
             <button
@@ -75,4 +75,3 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 export { ToastContext };
 export type { ToastContextType };
-

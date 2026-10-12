@@ -54,6 +54,125 @@ describe('Notes API & Security (/api/notes)', () => {
 
       const deleteRes = await request(app).delete('/api/notes/507f1f77bcf86cd799439011');
       expect(deleteRes.status).toBe(401);
+
+      expect((await request(app).get('/api/notes/categories')).status).toBe(401);
+      expect((await request(app).get('/api/notes/media/507f1f77bcf86cd799439011')).status).toBe(401);
+      expect(
+        (await request(app).post('/api/notes/categories').send({ name: 'Work' })).status
+      ).toBe(401);
+    });
+  });
+
+  describe('Note Media Uploads', () => {
+    it('stores supported uploads, serves them only to the owner, and allows embedding on their note', async () => {
+      const noteResponse = await request(app)
+        .post('/api/notes')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Photo note' });
+      const noteId = noteResponse.body.note.id;
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZsAAAAASUVORK5CYII=',
+        'base64'
+      );
+
+      const uploadResponse = await request(app)
+        .post('/api/notes/media')
+        .set('Cookie', [userACookie])
+        .field('noteId', noteId)
+        .attach('file', png, { filename: 'photo.png', contentType: 'image/png' });
+      expect(uploadResponse.status).toBe(201);
+      expect(uploadResponse.body.media.mimeType).toBe('image/png');
+
+      const mediaId = uploadResponse.body.media.id;
+      const mediaResponse = await request(app)
+        .get(`/api/notes/media/${mediaId}`)
+        .set('Cookie', [userACookie]);
+      expect(mediaResponse.status).toBe(200);
+      expect(mediaResponse.headers['content-type']).toContain('image/png');
+      expect(mediaResponse.body).toEqual(png);
+
+      const otherUserResponse = await request(app)
+        .get(`/api/notes/media/${mediaId}`)
+        .set('Cookie', [userBCookie]);
+      expect(otherUserResponse.status).toBe(404);
+
+      const mismatchedNodeTypeResponse = await request(app)
+        .patch(`/api/notes/${noteId}`)
+        .set('Cookie', [userACookie])
+        .send({
+          baseVersion: 1,
+          content: {
+            type: 'doc',
+            content: [{
+              type: 'video',
+              attrs: { src: `http://localhost:5000/api/notes/media/${mediaId}` },
+            }],
+          },
+        });
+      expect(mismatchedNodeTypeResponse.status).toBe(400);
+
+      const updateResponse = await request(app)
+        .patch(`/api/notes/${noteId}`)
+        .set('Cookie', [userACookie])
+        .send({
+          baseVersion: 1,
+          content: {
+            type: 'doc',
+            content: [{
+              type: 'image',
+              attrs: {
+                src: `http://localhost:5000/api/notes/media/${mediaId}`,
+                alt: 'photo.png',
+                title: null,
+              },
+            }],
+          },
+        });
+      expect(updateResponse.status).toBe(200);
+      expect(updateResponse.body.note.content.content[0].type).toBe('image');
+
+      const deleteResponse = await request(app)
+        .delete(`/api/notes/${noteId}`)
+        .set('Cookie', [userACookie]);
+      expect(deleteResponse.status).toBe(200);
+      const deletedMediaResponse = await request(app)
+        .get(`/api/notes/media/${mediaId}`)
+        .set('Cookie', [userACookie]);
+      expect(deletedMediaResponse.status).toBe(404);
+    });
+
+    it('rejects unauthenticated uploads, files with forged types, and uploads for another user’s note', async () => {
+      const privateNoteResponse = await request(app)
+        .post('/api/notes')
+        .set('Cookie', [userBCookie])
+        .send({ title: 'Private note' });
+      const privateNoteId = privateNoteResponse.body.note.id;
+      const ownNoteResponse = await request(app)
+        .post('/api/notes')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Own note' });
+      const ownNoteId = ownNoteResponse.body.note.id;
+      const fakePng = Buffer.from('<script>alert(1)</script>');
+
+      const unauthenticatedResponse = await request(app)
+        .post('/api/notes/media')
+        .field('noteId', ownNoteId)
+        .attach('file', fakePng, { filename: 'fake.png', contentType: 'image/png' });
+      expect(unauthenticatedResponse.status).toBe(401);
+
+      const forgedFileResponse = await request(app)
+        .post('/api/notes/media')
+        .set('Cookie', [userACookie])
+        .field('noteId', ownNoteId)
+        .attach('file', fakePng, { filename: 'fake.png', contentType: 'image/png' });
+      expect(forgedFileResponse.status).toBe(415);
+
+      const foreignNoteUpload = await request(app)
+        .post('/api/notes/media')
+        .set('Cookie', [userACookie])
+        .field('noteId', privateNoteId)
+        .attach('file', fakePng, { filename: 'fake.png', contentType: 'image/png' });
+      expect(foreignNoteUpload.status).toBe(404);
     });
   });
 
@@ -649,6 +768,55 @@ describe('Notes API & Security (/api/notes)', () => {
 
       expect(rejectRes.status).toBe(400);
       expect(rejectRes.body.error).toMatch(/500 notes/i);
+    });
+  });
+
+  describe('Note Categories', () => {
+    it('creates categories, assigns and filters notes, renames categories, and isolates users', async () => {
+      const createCategory = await request(app)
+        .post('/api/notes/categories')
+        .set('Cookie', [userACookie])
+        .send({ name: '  Work  ' });
+
+      expect(createCategory.status).toBe(201);
+      expect(createCategory.body.categories).toEqual(['Work']);
+
+      const duplicateCategory = await request(app)
+        .post('/api/notes/categories')
+        .set('Cookie', [userACookie])
+        .send({ name: 'work' });
+      expect(duplicateCategory.status).toBe(409);
+
+      const createNote = await request(app)
+        .post('/api/notes')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Planning', category: 'Work' });
+      expect(createNote.status).toBe(201);
+      expect(createNote.body.note.category).toBe('Work');
+
+      const filteredNotes = await request(app)
+        .get('/api/notes?category=Work')
+        .set('Cookie', [userACookie]);
+      expect(filteredNotes.body.notes).toHaveLength(1);
+      expect(filteredNotes.body.notes[0].category).toBe('Work');
+
+      const renameCategory = await request(app)
+        .patch('/api/notes/categories')
+        .set('Cookie', [userACookie])
+        .send({ oldName: 'Work', name: 'Projects' });
+      expect(renameCategory.status).toBe(200);
+      expect(renameCategory.body.categories).toEqual(['Projects']);
+
+      const renamedNote = await request(app)
+        .get(`/api/notes/${createNote.body.note.id}`)
+        .set('Cookie', [userACookie]);
+      expect(renamedNote.body.note.category).toBe('Projects');
+      expect(renamedNote.body.note.version).toBe(2);
+
+      const userBCategories = await request(app)
+        .get('/api/notes/categories')
+        .set('Cookie', [userBCookie]);
+      expect(userBCategories.body.categories).toEqual([]);
     });
   });
 

@@ -3,6 +3,7 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 export interface INote {
   user: Types.ObjectId;
   title: string;
+  category: string;
   content: Record<string, any>;
   plainText: string;
   version: number;
@@ -25,6 +26,12 @@ const noteSchema = new Schema<INoteDocument>(
       trim: true,
       maxlength: 120,
       default: 'Untitled',
+    },
+    category: {
+      type: String,
+      trim: true,
+      maxlength: 40,
+      default: '',
     },
     content: {
       type: Schema.Types.Mixed,
