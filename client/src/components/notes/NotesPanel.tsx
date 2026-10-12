@@ -482,9 +482,9 @@ export function NotesPanel({
         onClose={() => { void handleCloseEditor(); }}
         title="Edit note"
         description="Changes are saved automatically."
-        className="max-w-4xl"
+        isFullScreen
       >
-        <div className="flex max-h-[75vh] min-h-[300px] flex-col gap-4 overflow-y-auto">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
         {isNoteLoading && !activeNote ? (
           <div className="flex flex-col gap-4">
             <div className="h-10 bg-slate-100 dark:bg-white/5 rounded-xl animate-pulse w-1/2" />
@@ -573,6 +573,11 @@ export function NotesPanel({
                       Saving...
                     </span>
                   )}
+                  {status === 'unsaved' && (
+                    <span className="text-amber-600 dark:text-amber-400">
+                      Unsaved changes
+                    </span>
+                  )}
                   {status === 'saved' && (
                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                       <Check className="w-3.5 h-3.5" />
@@ -629,6 +634,7 @@ export function NotesPanel({
                 initialContent={content}
                 onContentChange={updateContent}
                 reloadTrigger={reloadTrigger}
+                isFullScreen
               />
             </Suspense>
           </>

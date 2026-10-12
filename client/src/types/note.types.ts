@@ -53,4 +53,4 @@ export interface NoteCategoriesResponse {
   categories: string[];
 }
 
-export type NoteSaveStatus = 'saved' | 'saving' | 'error';
+export type NoteSaveStatus = 'saved' | 'unsaved' | 'saving' | 'error';

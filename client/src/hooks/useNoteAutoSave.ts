@@ -3,6 +3,8 @@ import { notesApi } from '../api/notes.api.ts';
 import { ApiClientError } from '../api/client.ts';
 import type { Note, NoteSaveStatus } from '../types/note.types.ts';
 
+const AUTO_SAVE_DEBOUNCE_MS = 1500;
+
 interface UseNoteAutoSaveOptions {
   note: Note | null;
   onNoteUpdated: (updatedNote: Note) => void;
@@ -150,6 +152,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
   const scheduleAutoSave = useCallback(() => {
     if (hasConflict) return;
     isDirtyRef.current = true;
+    setStatus('unsaved');
 
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -162,7 +165,7 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
       } else {
         void startSave(payload);
       }
-    }, 800);
+    }, AUTO_SAVE_DEBOUNCE_MS);
   }, [hasConflict, startSave]);
 
   const updateTitle = useCallback(

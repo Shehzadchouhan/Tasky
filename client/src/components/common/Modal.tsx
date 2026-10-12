@@ -10,6 +10,7 @@ export interface ModalProps {
   children: ReactNode;
   initialFocusRef?: React.RefObject<HTMLElement | null>;
   className?: string;
+  isFullScreen?: boolean;
 }
 
 export function Modal({
@@ -20,6 +21,7 @@ export function Modal({
   children,
   initialFocusRef,
   className = '',
+  isFullScreen = false,
 }: ModalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const id = useId();
@@ -36,7 +38,11 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center overflow-y-auto ${
+        isFullScreen ? 'p-0' : 'p-4 sm:p-6'
+      }`}
+    >
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
@@ -52,9 +58,13 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
-        className={`relative z-10 w-full max-w-lg rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-white/10 shadow-2xl p-6 sm:p-7 text-left transition-all duration-200 animate-in fade-in zoom-in-95 focus:outline-none ${className}`}
+        className={`relative z-10 w-full ${
+          isFullScreen
+            ? 'flex h-dvh max-w-none flex-col rounded-none border-0 p-4 sm:p-6'
+            : 'max-w-lg rounded-2xl border p-6 sm:p-7'
+        } bg-white dark:bg-neutral-900 border-slate-200 dark:border-white/10 shadow-2xl text-left transition-all duration-200 animate-in fade-in zoom-in-95 focus:outline-none ${className}`}
       >
-        <div className="flex items-start justify-between gap-4 mb-5">
+        <div className="mb-5 flex shrink-0 items-start justify-between gap-4">
           <div>
             <h2
               id={titleId}
@@ -81,7 +91,7 @@ export function Modal({
           </button>
         </div>
 
-        {children}
+        {isFullScreen ? <div className="flex min-h-0 flex-1 flex-col">{children}</div> : children}
       </div>
     </div>
   );

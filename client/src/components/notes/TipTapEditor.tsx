@@ -54,6 +54,7 @@ interface TipTapEditorProps {
   initialContent: Record<string, any>;
   onContentChange: (content: Record<string, any>) => void;
   reloadTrigger?: number;
+  isFullScreen?: boolean;
 }
 
 export function TipTapEditor({
@@ -61,6 +62,7 @@ export function TipTapEditor({
   initialContent,
   onContentChange,
   reloadTrigger = 0,
+  isFullScreen = false,
 }: TipTapEditorProps) {
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
@@ -154,8 +156,9 @@ export function TipTapEditor({
         'aria-label': 'Note content',
         role: 'textbox',
         'aria-multiline': 'true',
-        class:
-          'min-h-[320px] max-h-[600px] overflow-y-auto px-4 py-3 focus:outline-none text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed',
+        class: isFullScreen
+          ? 'h-full min-h-[320px] overflow-y-auto px-4 py-3 focus:outline-none text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed'
+          : 'min-h-[320px] max-h-[600px] overflow-y-auto px-4 py-3 focus:outline-none text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed',
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
@@ -354,7 +357,9 @@ export function TipTapEditor({
   };
 
   return (
-    <div className="flex flex-col border border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-neutral-800 shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-neutral-500/50 transition-all">
+    <div className={`flex flex-col overflow-hidden border border-slate-200 dark:border-white/10 bg-white dark:bg-neutral-800 shadow-sm focus-within:ring-2 focus-within:ring-neutral-500/50 transition-all ${
+      isFullScreen ? 'min-h-0 flex-1 rounded-xl' : 'rounded-xl'
+    }`}>
       <NoteToolbar
         editor={editor}
         onOpenLinkModal={() => setIsLinkModalOpen(true)}
@@ -405,8 +410,8 @@ export function TipTapEditor({
         </p>
       )}
 
-      <div className="flex-1" onClickCapture={handleLinkClick}>
-        <EditorContent editor={editor} />
+      <div className="flex min-h-0 flex-1 flex-col" onClickCapture={handleLinkClick}>
+        <EditorContent editor={editor} className="flex min-h-0 flex-1 flex-col" />
       </div>
 
       <LinkModal

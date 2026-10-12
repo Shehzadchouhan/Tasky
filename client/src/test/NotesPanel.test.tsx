@@ -132,7 +132,7 @@ describe('NotesPanel Component & Responsive Dashboard Integration', () => {
     expect(screen.getByText('2h ago')).toBeInTheDocument();
   });
 
-  it('opens a selected note in a modal instead of showing an editor below the list', async () => {
+  it('opens a selected note in a full-screen editor instead of showing it below the list', async () => {
     const user = userEvent.setup();
     function ControlledNotesPanel() {
       const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -145,7 +145,9 @@ describe('NotesPanel Component & Responsive Dashboard Integration', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Sprint Planning/ }));
 
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    const editorDialog = await screen.findByRole('dialog');
+    expect(editorDialog).toBeInTheDocument();
+    expect(editorDialog).toHaveClass('h-dvh', 'max-w-none', 'rounded-none');
     expect(screen.getByDisplayValue('Sprint Planning')).toBeInTheDocument();
   });
 
