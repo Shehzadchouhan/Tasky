@@ -29,6 +29,9 @@ import type {
 } from '../types/task.types.ts';
 
 const PAGE_LIMIT = 10;
+const isValidNoteId = (id: string | null): id is string =>
+  id !== null && /^[a-f\d]{24}$/i.test(id);
+
 const StatsDashboard = lazy(() =>
   import('../components/stats/StatsDashboard.tsx').then(({ StatsDashboard: dashboard }) => ({
     default: dashboard,
@@ -49,9 +52,25 @@ export function DashboardPage() {
   const orderParam = (searchParams.get('order') as SortOrder) || 'desc';
   const pageParam = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
   const tabParam = (searchParams.get('tab') as 'notes' | 'tasks') || 'tasks';
-  const selectedNoteIdParam = searchParams.get('note');
+  const noteIdParam = searchParams.get('note');
+  const selectedNoteIdParam = isValidNoteId(noteIdParam) ? noteIdParam : null;
   const swipeStartRef = useRef<{ x: number; y: number; target: EventTarget | null } | null>(null);
   const tabSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (noteIdParam === null || isValidNoteId(noteIdParam)) return;
+
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (next.get('note') === noteIdParam) {
+          next.delete('note');
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  }, [noteIdParam, setSearchParams]);
 
   // Persisted collapsible state for Notes panel on desktop
   const [isNotesCollapsed, setIsNotesCollapsed] = useState(() => {

@@ -3,12 +3,16 @@ import { useState } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { NotesPanel } from '../components/notes/NotesPanel.tsx';
 import { DashboardPage } from '../pages/DashboardPage.tsx';
 import { ToastProvider } from '../context/ToastContext.tsx';
 import { notesApi } from '../api/notes.api.ts';
 import type { NoteSummary, Note } from '../types/note.types.ts';
+
+function LocationSearch() {
+  return <output data-testid="location-search">{useLocation().search}</output>;
+}
 
 // Mock notesApi
 vi.mock('../api/notes.api.ts', () => ({
@@ -236,6 +240,24 @@ describe('NotesPanel Component & Responsive Dashboard Integration', () => {
     expect(tasksTab).toBeInTheDocument();
     expect(notesTab).toHaveAttribute('aria-selected', 'true');
     expect(tasksTab).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('removes malformed note IDs from the URL without requesting that note', async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <MemoryRouter initialEntries={['/?tab=notes&note=not-a-valid-id']}>
+            <DashboardPage />
+            <LocationSearch />
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-search')).toHaveTextContent('?tab=notes');
+    });
+    expect(notesApi.getNoteById).not.toHaveBeenCalled();
   });
 
   it('switches dashboard tabs with a horizontal swipe but ignores vertical movement', async () => {
