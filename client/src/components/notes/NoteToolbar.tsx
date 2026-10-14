@@ -46,15 +46,15 @@ export function NoteToolbar({
   const btnClass = (isActive: boolean, disabled: boolean = false) =>
     `p-1.5 rounded-md transition-colors text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white ${
       isActive
-        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 font-semibold'
-        : 'hover:bg-slate-100 dark:hover:bg-white/10'
+        ? 'bg-yellow-400 text-neutral-950 font-bold shadow-xs dark:bg-yellow-400 dark:text-neutral-950'
+        : 'hover:bg-yellow-400/10 dark:hover:bg-yellow-400/10'
     } ${disabled ? 'opacity-40 cursor-not-allowed hover:bg-transparent' : ''}`;
 
   return (
     <div
       role="toolbar"
       aria-label="Note formatting toolbar"
-      className="flex flex-wrap items-center gap-0.5 sm:gap-1 p-2 border-b border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#1e1e2f]/50 rounded-t-xl"
+      className="flex flex-wrap items-center gap-0.5 sm:gap-1 p-2 border-b border-slate-200 dark:border-yellow-500/15 bg-slate-50/70 dark:bg-[#121215] rounded-t-xl"
     >
       {/* Undo / Redo */}
       <button

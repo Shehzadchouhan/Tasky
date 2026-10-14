@@ -18,7 +18,7 @@ export function Spinner({
       role="status"
       className="flex flex-col items-center justify-center gap-2 p-6 text-slate-400 dark:text-slate-500"
     >
-      <Loader2 className={`${sizeMap[size]} animate-spin text-slate-700 dark:text-slate-200`} aria-hidden="true" />
+      <Loader2 className={`${sizeMap[size]} animate-spin text-yellow-500 dark:text-yellow-400`} aria-hidden="true" />
       <span className="sr-only">{label}</span>
     </div>
   );

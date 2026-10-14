@@ -251,7 +251,7 @@ export function NotesPanel({
   return (
     <div className="flex flex-col md:flex-row h-full w-full gap-4 lg:gap-6 min-h-[600px]">
       {/* LEFT: Summaries List Rail */}
-      <div className="w-full md:w-80 lg:w-84 xl:w-96 flex flex-col shrink-0 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200 dark:border-white/10 shadow-xs p-4 gap-3">
+      <div className="w-full md:w-80 lg:w-84 xl:w-96 flex flex-col shrink-0 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200 dark:border-yellow-500/15 shadow-xs p-4 gap-3">
         {/* Header: Title + Collapse + New Note */}
         <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-white/5">
           <div className="flex items-center gap-2">
@@ -266,7 +266,7 @@ export function NotesPanel({
               </button>
             )}
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <FileText className="w-5 h-5 text-indigo-500" />
+              <FileText className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />
               Notes
             </h2>
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-medium">
@@ -573,7 +573,7 @@ export function NotesPanel({
                 <div className="flex items-center gap-1.5 text-xs">
                   {status === 'saving' && (
                     <span role="status" className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-yellow-500 dark:text-yellow-400" />
                       Saving...
                     </span>
                   )}

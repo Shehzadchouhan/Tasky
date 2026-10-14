@@ -24,22 +24,22 @@ const COLUMN_THEMES: Record<
   }
 > = {
   todo: {
-    headerBg: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-    dotBg: 'bg-amber-500',
-    borderAccent: 'border-amber-500/20',
-    badgeBg: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300',
+    headerBg: 'bg-yellow-500/10 text-yellow-800 dark:text-yellow-400',
+    dotBg: 'bg-yellow-400',
+    borderAccent: 'border-yellow-400/20',
+    badgeBg: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-950/60 dark:text-yellow-300',
   },
   'in-progress': {
-    headerBg: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
-    dotBg: 'bg-indigo-500',
-    borderAccent: 'border-indigo-500/20',
-    badgeBg: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300',
+    headerBg: 'bg-amber-500/10 text-amber-800 dark:text-amber-400',
+    dotBg: 'bg-amber-400',
+    borderAccent: 'border-amber-400/20',
+    badgeBg: 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300',
   },
   done: {
-    headerBg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-    dotBg: 'bg-emerald-500',
-    borderAccent: 'border-emerald-500/20',
-    badgeBg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300',
+    headerBg: 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-400',
+    dotBg: 'bg-emerald-400',
+    borderAccent: 'border-emerald-400/20',
+    badgeBg: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300',
   },
 };
 
@@ -69,8 +69,8 @@ export function KanbanColumn({
   return (
     <div
       data-testid={`kanban-column-${status}`}
-      className={`flex flex-col w-full md:w-80 lg:w-96 shrink-0 bg-slate-50/80 dark:bg-[#1a1a28] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xs transition-colors ${
-        isOver ? 'ring-2 ring-neutral-500 bg-neutral-500/5' : ''
+      className={`flex flex-col w-full md:w-80 lg:w-96 shrink-0 bg-slate-50/90 dark:bg-[#111114] rounded-2xl border border-slate-200/80 dark:border-yellow-500/15 shadow-xs transition-colors ${
+        isOver ? 'ring-2 ring-yellow-400 bg-yellow-400/5' : ''
       }`}
     >
       {/* Column Header */}

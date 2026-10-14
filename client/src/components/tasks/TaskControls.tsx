@@ -63,7 +63,7 @@ export function TaskControls({
         title="List view"
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
           view === 'list'
-            ? 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 shadow-xs'
+            ? 'bg-yellow-400 text-neutral-950 font-bold shadow-xs'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
@@ -79,7 +79,7 @@ export function TaskControls({
         title="Board view"
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
           view === 'board'
-            ? 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 shadow-xs'
+            ? 'bg-yellow-400 text-neutral-950 font-bold shadow-xs'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
@@ -95,7 +95,7 @@ export function TaskControls({
         title="Stats view"
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
           view === 'stats'
-            ? 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 shadow-xs'
+            ? 'bg-yellow-400 text-neutral-950 font-bold shadow-xs'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
@@ -107,7 +107,7 @@ export function TaskControls({
 
   if (isStatsView) {
     return (
-      <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs">
+      <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 shadow-xs">
         <div>
           <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Analytics & Insights</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">Track task completion trends and performance breakdown</p>
@@ -118,7 +118,7 @@ export function TaskControls({
   }
 
   return (
-    <div className="w-full flex flex-col gap-3.5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-neutral-800 border border-slate-200/80 dark:border-white/10 shadow-xs">
+    <div className="w-full flex flex-col gap-3.5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 shadow-xs">
       {/* Top Row: Search, View Toggle, and Sort Controls */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         {/* Search Input */}
@@ -248,7 +248,7 @@ export function TaskControls({
           <button
             type="button"
             onClick={onResetFilters}
-            className="ml-auto text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 rounded-sm cursor-pointer"
+            className="ml-auto text-xs font-semibold text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-sm cursor-pointer"
           >
             Reset filters
           </button>

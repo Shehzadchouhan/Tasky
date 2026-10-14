@@ -39,7 +39,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               'dark:bg-neutral-950 dark:text-slate-100',
               error
                 ? 'border-rose-500 focus-visible:border-rose-500 focus-visible:ring-2 focus-visible:ring-rose-500/30'
-                : 'border-slate-300 dark:border-white/10 focus-visible:border-slate-500 focus-visible:ring-2 focus-visible:ring-slate-500/30',
+                : 'border-slate-300 dark:border-white/10 focus-visible:border-yellow-500 focus-visible:ring-2 focus-visible:ring-yellow-500/30',
               'focus-visible:outline-none',
               className
             )

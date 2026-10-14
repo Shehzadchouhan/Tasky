@@ -26,10 +26,10 @@ export function TaskCard({
       data-testid={`task-item-${task.id}`}
       className={`group relative flex flex-col gap-3 p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${
         isDone
-          ? 'bg-slate-50/70 dark:bg-[#1e1e2f]/50 border-slate-200/60 dark:border-white/5 opacity-75'
+          ? 'bg-slate-50/70 dark:bg-neutral-950/60 border-slate-200/60 dark:border-white/5 opacity-75'
           : overdue
-          ? 'bg-white dark:bg-[#252538] border-rose-300 dark:border-rose-900/50 shadow-md shadow-rose-900/5 hover:border-rose-400'
-          : 'bg-white dark:bg-neutral-800 border-slate-200/80 dark:border-white/10 shadow-xs hover:shadow-md hover:border-neutral-500/40 dark:hover:border-neutral-500/40'
+          ? 'bg-white dark:bg-neutral-900 border-rose-300 dark:border-rose-900/50 shadow-md shadow-rose-900/5 hover:border-rose-400'
+          : 'bg-white dark:bg-[#121215] border-slate-200/80 dark:border-yellow-500/15 shadow-xs hover:shadow-md hover:border-yellow-400/50 dark:hover:border-yellow-400/40'
       }`}
     >
       {/* Top Header: Checkbox, Title, Actions */}
@@ -41,10 +41,10 @@ export function TaskCard({
             onClick={() => onToggleDone(task)}
             disabled={isToggling}
             aria-label={isDone ? `Mark "${task.title}" as incomplete` : `Mark "${task.title}" as done`}
-            className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center border transition-all cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 ${
+            className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center border transition-all cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 ${
               isDone
                 ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
-                : 'border-slate-300 dark:border-white/20 hover:border-neutral-500 bg-transparent text-transparent hover:text-slate-400'
+                : 'border-slate-300 dark:border-white/20 hover:border-yellow-400 bg-transparent text-transparent hover:text-yellow-500'
             }`}
           >
             <Check className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" />
@@ -82,7 +82,7 @@ export function TaskCard({
             type="button"
             onClick={() => onEdit(task)}
             aria-label={`Edit task "${task.title}"`}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-400/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
           >
             <Edit2 className="w-4 h-4" aria-hidden="true" />
           </button>

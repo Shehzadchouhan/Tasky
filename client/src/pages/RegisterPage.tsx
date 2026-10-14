@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckSquare } from 'lucide-react';
 import { Input } from '../components/common/Input.tsx';
 import { Button } from '../components/common/Button.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
@@ -103,11 +102,13 @@ export function RegisterPage() {
       <div className="w-full max-w-md flex flex-col gap-6">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-neutral-700 to-neutral-950 dark:from-neutral-200 dark:to-white flex items-center justify-center text-white dark:text-neutral-900 shadow-lg shadow-black/20 mb-3">
-            <CheckSquare className="w-7 h-7" />
-          </div>
+          <img
+            src="/taskly-logo.png"
+            alt="Taskly"
+            className="w-20 h-20 rounded-2xl shadow-xl shadow-yellow-500/25 border border-yellow-400/30 mb-4 transition-transform hover:scale-105"
+          />
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Create an account
+            Create an account on <span className="text-yellow-500 dark:text-yellow-400">Taskly</span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Get started with Taskly today for free.
@@ -115,7 +116,7 @@ export function RegisterPage() {
         </div>
 
         {/* Card Form */}
-        <div className="bg-white/90 dark:bg-neutral-900/85 border border-slate-200/80 dark:border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-sm">
+        <div className="bg-white/95 dark:bg-neutral-900/90 border border-slate-200/80 dark:border-yellow-400/15 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
             {errors.general && (
               <div
@@ -175,7 +176,7 @@ export function RegisterPage() {
             Already have an account?{' '}
             <Link
               to="/login"
-              className="font-semibold text-slate-800 dark:text-slate-200 hover:text-black dark:hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 rounded-xs"
+              className="font-semibold text-slate-800 dark:text-yellow-200 hover:text-yellow-700 dark:hover:text-yellow-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 rounded-xs"
             >
               Sign in
             </Link>

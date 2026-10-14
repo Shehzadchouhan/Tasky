@@ -226,21 +226,21 @@ export function TasklyAssistant({ onOpenTaskModal }: TasklyAssistantProps) {
       {isOpen && (
         <section
           aria-label="Taskly AI assistant"
-          className="mb-3 flex h-[min(34rem,calc(100dvh-7rem))] w-[min(23rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#25253a]"
+          className="mb-3 flex h-[min(34rem,calc(100dvh-7rem))] w-[min(23rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-yellow-400/20 dark:bg-[#121215]"
         >
-          <header className="flex items-center justify-between bg-gradient-to-r from-neutral-800 to-neutral-950 px-4 py-3 text-white">
+          <header className="flex items-center justify-between bg-gradient-to-r from-neutral-950 via-neutral-900 to-neutral-950 px-4 py-3 text-white border-b border-yellow-400/20">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" aria-hidden="true" />
+              <Sparkles className="h-5 w-5 text-yellow-400" aria-hidden="true" />
               <div>
-                <h2 className="text-sm font-bold">Taskly Assistant</h2>
-                <p className="text-xs text-white/80">Ask by typing or voice</p>
+                <h2 className="text-sm font-bold text-yellow-400">Taskly Assistant</h2>
+                <p className="text-xs text-slate-300">Ask by typing or voice</p>
               </div>
             </div>
             <button
               type="button"
               onClick={handleClose}
               aria-label="Close assistant"
-              className="rounded-lg p-1.5 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="rounded-lg p-1.5 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -251,7 +251,7 @@ export function TasklyAssistant({ onOpenTaskModal }: TasklyAssistantProps) {
               <div key={`${index}-${message.role}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                   message.role === 'user'
-                    ? 'bg-neutral-800 text-white'
+                    ? 'bg-yellow-400 text-neutral-950 font-medium'
                     : message.isError
                       ? 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-900/40'
                       : 'bg-slate-100 text-slate-800 dark:bg-white/10 dark:text-slate-100'
@@ -338,13 +338,13 @@ export function TasklyAssistant({ onOpenTaskModal }: TasklyAssistantProps) {
                 placeholder={isLoading ? 'Working...' : isListening ? 'Listening…' : 'Ask Taskly anything…'}
                 aria-label="Message the Taskly assistant"
                 maxLength={2000}
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-neutral-500 focus:ring-2 focus:ring-neutral-500/20 disabled:bg-slate-50 disabled:opacity-70 dark:border-white/10 dark:bg-neutral-950 dark:text-white dark:disabled:bg-neutral-900"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 disabled:bg-slate-50 disabled:opacity-70 dark:border-white/10 dark:bg-neutral-950 dark:text-white dark:disabled:bg-neutral-900"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
                 aria-label="Send message"
-                className="rounded-xl bg-neutral-800 p-2.5 text-white hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 disabled:opacity-50"
+                className="rounded-xl bg-yellow-400 p-2.5 text-neutral-950 hover:bg-yellow-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 disabled:opacity-50 cursor-pointer font-bold transition-colors"
               >
                 {input.trim() ? <Send className="h-4 w-4" aria-hidden="true" /> : <ArrowUp className="h-4 w-4" aria-hidden="true" />}
               </button>
@@ -357,9 +357,9 @@ export function TasklyAssistant({ onOpenTaskModal }: TasklyAssistantProps) {
           type="button"
           onClick={() => setIsOpen(true)}
           aria-label="Open Taskly AI assistant"
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-neutral-700 to-neutral-950 text-white shadow-lg shadow-black/30 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-neutral-500/30"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 via-amber-400 to-yellow-500 text-neutral-950 shadow-xl shadow-yellow-500/30 border border-yellow-300/40 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/40 cursor-pointer"
         >
-          <Bot className="h-6 w-6" aria-hidden="true" />
+          <Bot className="h-6 w-6 stroke-[2.2]" aria-hidden="true" />
         </button>
       )}
     </div>

@@ -378,7 +378,7 @@ export function DashboardPage() {
         >
           <span
             aria-hidden="true"
-            className={`pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-white shadow-xs transition-transform duration-200 dark:bg-neutral-800 ${
+            className={`pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-yellow-400 shadow-xs transition-transform duration-200 ${
               tabParam === 'tasks' ? 'translate-x-full' : ''
             }`}
           />
@@ -387,9 +387,9 @@ export function DashboardPage() {
             role="tab"
             aria-selected={tabParam === 'notes'}
             onClick={() => handleTabChange('notes')}
-            className={`relative z-10 rounded-lg px-5 py-2 transition-colors ${
+            className={`relative z-10 rounded-lg px-5 py-2 transition-colors font-bold ${
               tabParam === 'notes'
-                ? 'bg-white dark:bg-neutral-800 text-slate-900 dark:text-white shadow-xs'
+                ? 'text-neutral-950'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -400,9 +400,9 @@ export function DashboardPage() {
             role="tab"
             aria-selected={tabParam === 'tasks'}
             onClick={() => handleTabChange('tasks')}
-            className={`relative z-10 rounded-lg px-5 py-2 transition-colors ${
+            className={`relative z-10 rounded-lg px-5 py-2 transition-colors font-bold ${
               tabParam === 'tasks'
-                ? 'bg-white dark:bg-neutral-800 text-slate-900 dark:text-white shadow-xs'
+                ? 'text-neutral-950'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >

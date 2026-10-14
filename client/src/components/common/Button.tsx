@@ -24,7 +24,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500 active:scale-[0.98]';
+      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-yellow-500 active:scale-[0.98]';
 
     const sizeStyles = {
       sm: 'px-3 py-1.5 text-xs gap-1.5',
@@ -34,7 +34,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles = {
       primary:
-        'bg-neutral-900 hover:bg-neutral-700 text-white shadow-md shadow-black/15 hover:shadow-black/25 focus-visible:ring-offset-white dark:bg-neutral-100 dark:hover:bg-white dark:text-neutral-900 dark:focus-visible:ring-offset-neutral-950',
+        'bg-yellow-400 hover:bg-yellow-300 text-neutral-950 shadow-md shadow-yellow-500/20 hover:shadow-yellow-500/30 focus-visible:ring-offset-white dark:bg-yellow-400 dark:hover:bg-yellow-300 dark:text-neutral-950 dark:focus-visible:ring-offset-neutral-950',
       secondary:
         'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300/80 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-slate-200 dark:border-white/10',
       danger:

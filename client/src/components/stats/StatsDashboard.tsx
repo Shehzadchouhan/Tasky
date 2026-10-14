@@ -30,11 +30,11 @@ interface StatsDashboardProps {
 }
 
 const CATEGORY_COLORS: Record<TaskCategory, string> = {
-  Work: '#52525b',
-  Home: '#71717a',
-  Personal: '#a1a1aa',
-  Urgent: '#27272a',
-  none: '#d4d4d8',
+  Work: '#facc15',
+  Home: '#10b981',
+  Personal: '#f59e0b',
+  Urgent: '#f43f5e',
+  none: '#a1a1aa',
 };
 
 const CATEGORY_LABELS: Record<TaskCategory, string> = {
@@ -82,22 +82,22 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 animate-pulse"
+              className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 animate-pulse"
             >
               <div className="flex items-center justify-between mb-3">
-                <div className="w-20 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
-                <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-700" />
+                <div className="w-20 h-4 bg-slate-200 dark:bg-white/10 rounded" />
+                <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-white/10" />
               </div>
-              <div className="w-16 h-8 bg-slate-200 dark:bg-slate-700 rounded mb-2" />
-              <div className="w-28 h-3 bg-slate-200 dark:bg-slate-700 rounded" />
+              <div className="w-16 h-8 bg-slate-200 dark:bg-white/10 rounded mb-2" />
+              <div className="w-28 h-3 bg-slate-200 dark:bg-white/10 rounded" />
             </div>
           ))}
         </div>
 
         {/* Charts Skeleton Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 animate-pulse h-80" />
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 animate-pulse h-80" />
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 animate-pulse h-80" />
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 animate-pulse h-80" />
         </div>
       </div>
     );
@@ -165,13 +165,13 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
         {/* Total Tasks */}
         <div
           data-testid="kpi-total"
-          className="p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col justify-between"
+          className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 shadow-xs flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Total Tasks
             </span>
-            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 flex items-center justify-center border border-yellow-400/20">
               <ClipboardList className="w-4 h-4" aria-hidden="true" />
             </div>
           </div>
@@ -188,7 +188,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
         {/* Completed Tasks */}
         <div
           data-testid="kpi-done"
-          className="p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col justify-between"
+          className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 shadow-xs flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -211,7 +211,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
         {/* Overdue Tasks */}
         <div
           data-testid="kpi-overdue"
-          className="p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col justify-between"
+          className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 shadow-xs flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -246,26 +246,26 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
         {/* Completion Rate */}
         <div
           data-testid="kpi-rate"
-          className="p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col justify-between"
+          className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 shadow-xs flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Completion Rate
             </span>
-            <div className="w-9 h-9 rounded-xl bg-neutral-500/10 dark:bg-neutral-500/20 text-neutral-700 dark:text-neutral-200 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 flex items-center justify-center border border-yellow-400/20">
               <Percent className="w-4 h-4" aria-hidden="true" />
             </div>
           </div>
           <div className="mt-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-extrabold text-neutral-700 dark:text-neutral-200">
+              <span className="text-3xl font-extrabold text-neutral-800 dark:text-yellow-400">
                 {totals.completionRate}%
               </span>
             </div>
             {/* Visual progress bar */}
-            <div className="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full mt-2 overflow-hidden">
+            <div className="w-full bg-slate-100 dark:bg-neutral-800 h-2 rounded-full mt-2 overflow-hidden">
               <div
-                className="bg-neutral-700 dark:bg-neutral-200 h-full rounded-full transition-all duration-500"
+                className="bg-yellow-400 h-full rounded-full transition-all duration-500 shadow-xs shadow-yellow-400/50"
                 style={{ width: `${Math.min(100, Math.max(0, totals.completionRate))}%` }}
               />
             </div>
@@ -279,7 +279,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
         <div
           role="region"
           aria-label="Completed tasks per day chart"
-          className="p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col"
+          className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 shadow-xs flex flex-col"
         >
           {/* Header & Days Selector Toggle */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -296,7 +296,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
             <div
               role="group"
               aria-label="Time range selector"
-              className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-[#1e1e2f] border border-slate-200 dark:border-white/10 shrink-0 self-start sm:self-auto"
+              className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-white/10 shrink-0 self-start sm:self-auto"
             >
               {([7, 14, 30] as const).map((d) => (
                 <button
@@ -307,7 +307,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
                   aria-pressed={days === d}
                   className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                     days === d
-                      ? 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 shadow-xs'
+                      ? 'bg-yellow-400 text-neutral-950 font-bold shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -344,14 +344,14 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
                   axisLine={false}
                 />
                 <Tooltip
-                  cursor={{ fill: 'rgba(108, 99, 255, 0.08)' }}
+                  cursor={{ fill: 'rgba(250, 204, 21, 0.12)' }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const item = payload[0].payload;
                       return (
-                        <div className="p-2.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs shadow-lg border border-slate-700 dark:border-slate-200">
-                          <p className="font-semibold">{item.date}</p>
-                          <p className="mt-0.5 text-neutral-700 dark:text-neutral-200 font-bold">
+                        <div className="p-2.5 rounded-xl bg-neutral-950 text-white text-xs shadow-lg border border-yellow-400/30">
+                          <p className="font-semibold text-yellow-400">{item.date}</p>
+                          <p className="mt-0.5 text-slate-200 font-medium">
                             {item.count} {item.count === 1 ? 'task' : 'tasks'} completed
                           </p>
                         </div>
@@ -363,7 +363,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
                 <Bar
                   dataKey="count"
                   name="Completed"
-                  fill="#71717a"
+                  fill="#facc15"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={36}
                 />
@@ -397,7 +397,7 @@ export function StatsDashboard({ onCreateTask }: StatsDashboardProps) {
         <div
           role="region"
           aria-label="Tasks by category chart"
-          className="p-5 rounded-2xl bg-white dark:bg-[#252538] border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col"
+          className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-slate-200/80 dark:border-yellow-500/15 shadow-xs flex flex-col"
         >
           <div className="mb-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">

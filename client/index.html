@@ -2,15 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/taskly-icon.svg" />
+    <link rel="icon" type="image/png" href="/taskly-logo.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/taskly-logo.png" />
+    <meta name="theme-color" content="#09090b" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Taskly - Modern Task Management</title>
     <script>
       (function() {
         try {
           var saved = localStorage.getItem('taskly-theme');
-          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (saved === 'dark' || (!saved && prefersDark)) {
+          if (saved !== 'light') {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');

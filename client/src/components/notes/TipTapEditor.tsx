@@ -114,7 +114,7 @@ export function TipTapEditor({
         },
         blockquote: {
           HTMLAttributes: {
-            class: 'border-l-4 border-indigo-500 pl-4 italic text-slate-600 dark:text-slate-300 my-2',
+            class: 'border-l-4 border-yellow-400 pl-4 italic text-slate-600 dark:text-slate-300 my-2',
           },
         },
       }),
@@ -132,7 +132,7 @@ export function TipTapEditor({
       Link.configure({
         openOnClick: true,
         HTMLAttributes: {
-          class: 'text-indigo-600 dark:text-indigo-400 underline underline-offset-2 hover:text-indigo-800 dark:hover:text-indigo-300',
+          class: 'text-yellow-600 dark:text-yellow-400 font-medium underline underline-offset-2 hover:text-yellow-700 dark:hover:text-yellow-300',
           rel: 'noopener noreferrer',
           target: '_blank',
         },

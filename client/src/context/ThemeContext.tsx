@@ -19,7 +19,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (saved === 'light' || saved === 'dark') {
         return saved;
       }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return 'dark';
     } catch {
       return 'dark';
     }
@@ -56,4 +56,3 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export { ThemeContext };
 export type { ThemeContextType };
-

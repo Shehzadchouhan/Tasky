@@ -13,10 +13,10 @@ export function NoteListItem({ note, isSelected, onSelect }: NoteListItemProps) 
       type="button"
       onClick={() => onSelect(note.id)}
       aria-selected={isSelected}
-      className={`w-full text-left p-3.5 rounded-xl transition-all border flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 ${
+      className={`w-full text-left p-3.5 rounded-xl transition-all border flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 ${
         isSelected
-          ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800/80 shadow-xs'
-          : 'bg-white dark:bg-[#252538]/60 border-slate-200/80 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 hover:bg-slate-50/50 dark:hover:bg-[#252538]'
+          ? 'bg-yellow-500/10 dark:bg-yellow-400/10 border-yellow-500/50 dark:border-yellow-400/40 shadow-xs'
+          : 'bg-white dark:bg-[#18181b]/60 border-slate-200/80 dark:border-white/5 hover:border-yellow-400/30 dark:hover:border-yellow-400/20 hover:bg-slate-50/50 dark:hover:bg-[#18181b]'
       }`}
     >
       <div className="flex items-center justify-between gap-2">
