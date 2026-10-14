@@ -19,10 +19,11 @@ export const errorHandler: ErrorRequestHandler = (
 ): void => {
   const isProduction = process.env.NODE_ENV === 'production';
 
-  if (err instanceof MulterError) {
-    const statusCode = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+  if (err instanceof MulterError || err.name === 'MulterError') {
+    const multerCode = (err as any).code;
+    const statusCode = multerCode === 'LIMIT_FILE_SIZE' ? 413 : 400;
     res.status(statusCode).json({
-      error: err.code === 'LIMIT_FILE_SIZE'
+      error: multerCode === 'LIMIT_FILE_SIZE'
         ? 'Media uploads cannot exceed 50 MB.'
         : 'Invalid media upload.',
     });

@@ -19,7 +19,7 @@ const ACCEPTED_MIME_TYPES = new Set([
 export const noteMediaUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_MEDIA_SIZE, files: 1 },
-  fileFilter: (_req, file, callback) => {
+  fileFilter: (_req: any, file: Express.Multer.File, callback: any) => {
     if (!ACCEPTED_MIME_TYPES.has(file.mimetype)) {
       callback(new AppError('Only supported image, video, and audio files can be uploaded.', 415));
       return;
