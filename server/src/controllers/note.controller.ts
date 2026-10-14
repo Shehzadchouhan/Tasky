@@ -74,7 +74,11 @@ export const getNotes = async (
       ];
     }
     if (query.category !== undefined) {
-      filter.category = query.category;
+      if (query.category === '') {
+        filter.category = { $in: ['', null] };
+      } else {
+        filter.category = query.category;
+      }
     }
 
     const page = query.page;

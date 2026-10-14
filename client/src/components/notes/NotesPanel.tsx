@@ -17,6 +17,7 @@ import {
 import { Button } from '../common/Button.tsx';
 import { Modal } from '../common/Modal.tsx';
 import { NoteListItem } from './NoteListItem.tsx';
+import { useQueryClient } from '@tanstack/react-query';
 import { DeleteNoteModal } from './DeleteNoteModal.tsx';
 import {
   useNotesListQuery,
@@ -112,9 +113,11 @@ export function NotesPanel({
   const totalPages = listData?.totalPages || 0;
 
   const activeNote = activeNoteData?.note || null;
+  const queryClient = useQueryClient();
 
   // Auto-save engine
-  const handleNoteUpdated = (_updatedNote: Note) => {
+  const handleNoteUpdated = (updatedNote: Note) => {
+    queryClient.setQueryData(['notes', 'detail', updatedNote.id], { note: updatedNote });
     refetchList();
   };
 
@@ -637,7 +640,8 @@ export function NotesPanel({
             {/* Lazy-Loaded TipTap Rich Editor */}
             <Suspense fallback={<EditorSkeleton />}>
               <TipTapEditor
-                noteId={activeNote!.id}
+                key={activeNote.id}
+                noteId={activeNote.id}
                 initialContent={content}
                 onContentChange={updateContent}
                 reloadTrigger={reloadTrigger}

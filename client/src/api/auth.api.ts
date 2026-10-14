@@ -6,6 +6,7 @@ export const authApi = {
     return apiClient<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+      skipAuthRedirect: true,
     });
   },
 
@@ -13,6 +14,7 @@ export const authApi = {
     return apiClient<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
+      skipAuthRedirect: true,
     });
   },
 

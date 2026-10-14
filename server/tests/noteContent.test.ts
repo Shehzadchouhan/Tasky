@@ -124,7 +124,18 @@ describe('TipTap Content Validation & PlainText Extraction', () => {
               {
                 type: 'text',
                 text: 'Link',
-                marks: [{ type: 'link', attrs: { href: 'https://example.com' } }],
+                marks: [
+                  {
+                    type: 'link',
+                    attrs: {
+                      href: 'https://example.com',
+                      target: '_blank',
+                      rel: 'noopener noreferrer',
+                      class: null,
+                      title: 'Link title',
+                    },
+                  },
+                ],
               },
               {
                 type: 'text',
@@ -132,6 +143,30 @@ describe('TipTap Content Validation & PlainText Extraction', () => {
                 marks: [{ type: 'link', attrs: { href: 'mailto:test@example.com' } }],
               },
             ],
+          },
+        ],
+      };
+      expect(() => validateTipTapDoc(doc)).not.toThrow();
+    });
+
+    it('should accept orderedList and codeBlock with standard TipTap attrs', () => {
+      const doc = {
+        type: 'doc',
+        content: [
+          {
+            type: 'orderedList',
+            attrs: { start: 1, type: null },
+            content: [
+              {
+                type: 'listItem',
+                content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Step 1' }] }],
+              },
+            ],
+          },
+          {
+            type: 'codeBlock',
+            attrs: { language: 'typescript' },
+            content: [{ type: 'text', text: 'const x: number = 42;' }],
           },
         ],
       };

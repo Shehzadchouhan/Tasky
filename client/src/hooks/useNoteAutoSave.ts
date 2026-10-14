@@ -76,6 +76,9 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
     if (activeNoteIdRef.current !== note.id) {
       activeNoteIdRef.current = note.id;
       currentVersionRef.current = note.version;
+      titleRef.current = note.title;
+      categoryRef.current = note.category || '';
+      contentRef.current = note.content || { type: 'doc', content: [] };
       setTitle(note.title);
       setCategory(note.category || '');
       setContent(note.content || { type: 'doc', content: [] });
@@ -91,8 +94,10 @@ export function useNoteAutoSave({ note, onNoteUpdated }: UseNoteAutoSaveOptions)
         debounceTimerRef.current = null;
       }
     } else {
-      // Sync version if updated externally
-      currentVersionRef.current = note.version;
+      // Sync version if updated externally (do not downgrade to stale cache)
+      if (note.version > currentVersionRef.current) {
+        currentVersionRef.current = note.version;
+      }
     }
   }, [note?.id, note?.version]);
 

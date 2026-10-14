@@ -237,8 +237,49 @@ export function validateTipTapDoc(doc: unknown): void {
       if (typeof n.attrs.checked !== 'boolean') {
         throw new Error('taskItem attrs.checked must be a boolean');
       }
+    } else if (nodeType === 'orderedList') {
+      for (const k of keys) {
+        if (k !== 'type' && k !== 'attrs' && k !== 'content') {
+          throw new Error(`Unknown property "${k}" on orderedList node`);
+        }
+      }
+      if (n.attrs !== undefined) {
+        if (!n.attrs || typeof n.attrs !== 'object' || Array.isArray(n.attrs)) {
+          throw new Error('orderedList attrs must be an object');
+        }
+        for (const ak of Object.keys(n.attrs)) {
+          if (ak !== 'start' && ak !== 'type') {
+            throw new Error(`Unknown attribute "${ak}" on orderedList`);
+          }
+        }
+        if (n.attrs.start !== undefined && !Number.isInteger(n.attrs.start)) {
+          throw new Error('orderedList start must be an integer');
+        }
+        if (n.attrs.type !== undefined && n.attrs.type !== null && typeof n.attrs.type !== 'string') {
+          throw new Error('orderedList type must be a string or null');
+        }
+      }
+    } else if (nodeType === 'codeBlock') {
+      for (const k of keys) {
+        if (k !== 'type' && k !== 'attrs' && k !== 'content') {
+          throw new Error(`Unknown property "${k}" on codeBlock node`);
+        }
+      }
+      if (n.attrs !== undefined) {
+        if (!n.attrs || typeof n.attrs !== 'object' || Array.isArray(n.attrs)) {
+          throw new Error('codeBlock attrs must be an object');
+        }
+        for (const ak of Object.keys(n.attrs)) {
+          if (ak !== 'language') {
+            throw new Error(`Unknown attribute "${ak}" on codeBlock`);
+          }
+        }
+        if (n.attrs.language !== undefined && n.attrs.language !== null && typeof n.attrs.language !== 'string') {
+          throw new Error('codeBlock language must be a string or null');
+        }
+      }
     } else {
-      // paragraph, bulletList, orderedList, listItem, taskList, blockquote, codeBlock
+      // paragraph, bulletList, listItem, taskList, blockquote
       for (const k of keys) {
         if (k !== 'type' && k !== 'content') {
           throw new Error(`Unknown property "${k}" on ${nodeType} node`);
@@ -278,9 +319,10 @@ export function validateTipTapDoc(doc: unknown): void {
       if (!m.attrs || typeof m.attrs !== 'object' || Array.isArray(m.attrs)) {
         throw new Error('Link mark requires attrs object with href');
       }
+      const allowedLinkAttrs = new Set(['href', 'target', 'rel', 'class', 'title']);
       const linkAttrKeys = Object.keys(m.attrs);
       for (const lak of linkAttrKeys) {
-        if (lak !== 'href') {
+        if (!allowedLinkAttrs.has(lak)) {
           throw new Error(`Unknown attribute "${lak}" on link mark`);
         }
       }
@@ -297,6 +339,12 @@ export function validateTipTapDoc(doc: unknown): void {
       }
       if (!ALLOWED_LINK_PROTOCOLS.test(href)) {
         throw new Error('Link href must start with http://, https:// or mailto:');
+      }
+      for (const attr of ['target', 'rel', 'class', 'title']) {
+        const val = m.attrs[attr];
+        if (val !== undefined && val !== null && (typeof val !== 'string' || val.length > 256)) {
+          throw new Error(`Link ${attr} must be a string no longer than 256 characters`);
+        }
       }
     } else {
       // bold, italic, strike, code

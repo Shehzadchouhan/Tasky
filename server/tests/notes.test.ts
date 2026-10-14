@@ -817,6 +817,19 @@ describe('Notes API & Security (/api/notes)', () => {
         .get('/api/notes/categories')
         .set('Cookie', [userBCookie]);
       expect(userBCategories.body.categories).toEqual([]);
+
+      // Uncategorized filter (category='') finds notes with category='' or missing category
+      const createUncategorizedNote = await request(app)
+        .post('/api/notes')
+        .set('Cookie', [userACookie])
+        .send({ title: 'Uncategorized Note' });
+      expect(createUncategorizedNote.status).toBe(201);
+
+      const uncategorizedRes = await request(app)
+        .get('/api/notes?category=')
+        .set('Cookie', [userACookie]);
+      expect(uncategorizedRes.status).toBe(200);
+      expect(uncategorizedRes.body.notes.some((n: any) => n.id === createUncategorizedNote.body.note.id)).toBe(true);
     });
   });
 

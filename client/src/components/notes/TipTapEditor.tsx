@@ -80,6 +80,8 @@ export function TipTapEditor({
   const recordingSizeRef = useRef(0);
   const recordingExceededLimitRef = useRef(false);
   const mountedRef = useRef(false);
+  const loadedNoteIdRef = useRef<string | null>(null);
+  activeNoteIdRef.current = noteId;
   onContentChangeRef.current = onContentChange;
 
   useEffect(() => {
@@ -170,17 +172,17 @@ export function TipTapEditor({
 
   // Only call setContent when the note ID changes or when "Reload latest" triggers
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
 
-    if (activeNoteIdRef.current !== noteId) {
-      activeNoteIdRef.current = noteId;
+    if (loadedNoteIdRef.current !== noteId) {
+      loadedNoteIdRef.current = noteId;
       editor.commands.setContent(initialContent || { type: 'doc', content: [] });
     }
   }, [noteId, initialContent, editor]);
 
   // Handle explicit reload trigger on conflict resolution ("Reload latest")
   useEffect(() => {
-    if (!editor || reloadTrigger === 0) return;
+    if (!editor || editor.isDestroyed || reloadTrigger === 0) return;
     editor.commands.setContent(initialContent || { type: 'doc', content: [] });
   }, [reloadTrigger, initialContent, editor]);
 
