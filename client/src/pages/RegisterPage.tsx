@@ -103,7 +103,7 @@ export function RegisterPage() {
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center">
           <img
-            src="/taskly-logo.png"
+            src="/taskly-icon.svg"
             alt="Taskly"
             className="w-20 h-20 rounded-2xl shadow-xl shadow-yellow-500/25 border border-yellow-400/30 mb-4 transition-transform hover:scale-105"
           />

@@ -3,7 +3,7 @@ import { notesApi } from '../api/notes.api.ts';
 import { ApiClientError } from '../api/client.ts';
 import type { Note, NoteSaveStatus } from '../types/note.types.ts';
 
-const AUTO_SAVE_DEBOUNCE_MS = 1500;
+const AUTO_SAVE_DEBOUNCE_MS = 500;
 
 interface NotePayload {
   title: string;

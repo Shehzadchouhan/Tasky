@@ -35,7 +35,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     vi.useRealTimers();
   });
 
-  it('triggers exactly one debounced save (1500ms) after typing', async () => {
+  it('triggers exactly one debounced save (500ms) after typing', async () => {
     const updatedNote: Note = { ...sampleNote, title: 'Updated Title', version: 2 };
     vi.mocked(notesApi.updateNote).mockResolvedValueOnce({ note: updatedNote });
 
@@ -59,16 +59,16 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
       result.current.updateTitle('Updated Title');
     });
 
-    // Before 1500ms, updateNote is NOT called
+    // Before 500ms, updateNote is NOT called
     expect(notesApi.updateNote).not.toHaveBeenCalled();
 
-    // Advance 1499ms
+    // Advance 499ms
     act(() => {
-      vi.advanceTimersByTime(1499);
+      vi.advanceTimersByTime(499);
     });
     expect(notesApi.updateNote).not.toHaveBeenCalled();
 
-    // Advance past 1500ms
+    // Advance past 500ms
     await act(async () => {
       vi.advanceTimersByTime(1);
     });
@@ -102,13 +102,13 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
 
     act(() => result.current.updateTitle('First title'));
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
     expect(result.current.status).toBe('saving');
 
     act(() => {
       result.current.updateTitle('Latest title');
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(300);
     });
 
     await act(async () => {
@@ -119,7 +119,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     expect(notesApi.updateNote).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      vi.advanceTimersByTime(500);
+      vi.advanceTimersByTime(200);
     });
 
     expect(notesApi.updateNote).toHaveBeenCalledTimes(2);
@@ -144,9 +144,9 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     expect(result.current.status).toBe('unsaved');
 
     act(() => {
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(300);
       result.current.updateTitle('Final title');
-      vi.advanceTimersByTime(1499);
+      vi.advanceTimersByTime(499);
     });
     expect(notesApi.updateNote).not.toHaveBeenCalled();
 
@@ -174,7 +174,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
 
     act(() => result.current.updateCategory('Work'));
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
 
     expect(notesApi.updateNote).toHaveBeenCalledWith('note-123', {
@@ -197,7 +197,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     );
     act(() => result.current.updateTitle('Saving now'));
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
 
     let flushPromise!: Promise<boolean>;
@@ -241,7 +241,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
 
     // Fire timer for first edit
     act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
 
     // First save is now in-flight
@@ -253,13 +253,13 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
       result.current.updateTitle('Second Edit');
     });
     act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
     act(() => {
       result.current.updateTitle('Final Title');
     });
     act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
 
     // No parallel second save yet while first is in-flight
@@ -300,7 +300,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
 
     expect(result.current.status).toBe('error');
@@ -338,7 +338,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
 
     act(() => result.current.updateTitle('First draft'));
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
     act(() => {
       result.current.updateTitle('Latest draft');
@@ -365,7 +365,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     expect(result.current.status).toBe('saved');
 
     act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
     expect(notesApi.updateNote).toHaveBeenCalledTimes(2);
   });
@@ -419,7 +419,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
 
     // Conflict state is now active
@@ -463,7 +463,7 @@ describe('Notes Auto-Save Engine & Optimistic Concurrency Control', () => {
       result.current.updateTitle('New Conflict Attempt');
     });
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(500);
     });
     expect(result.current.hasConflict).toBe(true);
 

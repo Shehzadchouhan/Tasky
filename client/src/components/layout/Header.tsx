@@ -12,7 +12,7 @@ export function Header() {
         {/* Logo / Brand */}
         <div className="flex items-center gap-2.5">
           <img
-            src="/taskly-logo.png"
+            src="/taskly-icon.svg"
             alt="Taskly Logo"
             className="w-9 h-9 rounded-xl object-cover border border-yellow-400/30 shadow-sm shadow-yellow-500/20"
           />

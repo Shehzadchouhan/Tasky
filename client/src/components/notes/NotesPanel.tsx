@@ -33,8 +33,16 @@ import { useDebounce } from '../../hooks/useDebounce.ts';
 import { useToast } from '../../hooks/useToast.ts';
 import type { Note } from '../../types/note.types.ts';
 
-// Lazy-load TipTap editor to keep initial bundle small
-const TipTapEditor = lazy(() => import('./TipTapEditor.tsx'));
+// Lazy-load the editor, but start its download as soon as a note is selected.
+const loadTipTapEditor = () =>
+  import('./TipTapEditor.tsx').then(({ TipTapEditor: editor }) => ({ default: editor }));
+const TipTapEditor = lazy(loadTipTapEditor);
+
+function preloadTipTapEditor() {
+  void loadTipTapEditor().catch((error: unknown) => {
+    console.error('Failed to preload note editor:', error);
+  });
+}
 
 function EditorSkeleton() {
   return (
@@ -114,6 +122,12 @@ export function NotesPanel({
 
   const activeNote = activeNoteData?.note || null;
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (selectedNoteId) {
+      preloadTipTapEditor();
+    }
+  }, [selectedNoteId]);
 
   // Auto-save engine
   const handleNoteUpdated = (updatedNote: Note) => {
