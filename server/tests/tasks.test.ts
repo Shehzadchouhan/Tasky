@@ -1,55 +1,44 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
+import mongoose from 'mongoose';
 import app from '../src/app.js';
 import { Task } from '../src/models/Task.js';
 import { backfillCompletedAt } from '../src/config/db.js';
+import { createWorkspaceCookie, workspaceIdFromCookie } from './workspace.js';
 
 describe('Tasks API & Security (/api/tasks)', () => {
   let userACookie: string;
   let userBCookie: string;
 
-  const helperCreateUser = async (name: string, email: string) => {
-    const res = await request(app).post('/api/auth/register').send({
-      name,
-      email,
-      password: 'password123',
-    });
-    const rawCookie = res.headers['set-cookie'];
-    const cookie = Array.isArray(rawCookie) ? rawCookie[0] : (rawCookie || '');
-    return { user: res.body.user, cookie };
-  };
-
   beforeEach(async () => {
-    const userA = await helperCreateUser('User A', 'user_a@example.com');
-    userACookie = userA.cookie;
-
-    const userB = await helperCreateUser('User B', 'user_b@example.com');
-    userBCookie = userB.cookie;
+    userACookie = await createWorkspaceCookie();
+    userBCookie = await createWorkspaceCookie();
   });
 
-  describe('Authentication Enforcement', () => {
-    it('should reject unauthenticated requests with 401', async () => {
+  describe('Anonymous workspace access', () => {
+    it('allows task access without sign-in and issues a workspace cookie', async () => {
       const getRes = await request(app).get('/api/tasks');
-      expect(getRes.status).toBe(401);
+      expect(getRes.status).toBe(200);
+      expect(getRes.headers['set-cookie']?.[0]).toContain('taskly_workspace=');
 
       const postRes = await request(app).post('/api/tasks').send({ title: 'Task' });
-      expect(postRes.status).toBe(401);
+      expect(postRes.status).toBe(201);
 
       const getByIdRes = await request(app).get('/api/tasks/507f1f77bcf86cd799439011');
-      expect(getByIdRes.status).toBe(401);
+      expect(getByIdRes.status).toBe(404);
 
       const patchRes = await request(app)
         .patch('/api/tasks/507f1f77bcf86cd799439011')
         .send({ title: 'Updated' });
-      expect(patchRes.status).toBe(401);
+      expect(patchRes.status).toBe(404);
 
       const deleteRes = await request(app).delete('/api/tasks/507f1f77bcf86cd799439011');
-      expect(deleteRes.status).toBe(401);
+      expect(deleteRes.status).toBe(404);
 
       const reorderRes = await request(app)
         .post('/api/tasks/reorder')
         .send({ status: 'todo', orderedIds: [] });
-      expect(reorderRes.status).toBe(401);
+      expect(reorderRes.status).toBe(200);
     });
   });
 
@@ -876,12 +865,9 @@ describe('Tasks API & Security (/api/tasks)', () => {
     });
 
     it('should backfill completedAt = updatedAt for legacy done tasks with null completedAt', async () => {
-      const userRes = await request(app).get('/api/auth/me').set('Cookie', [userACookie]);
-      const userId = userRes.body.user.id;
-
       const dummyUpdatedAt = new Date('2026-08-15T12:00:00.000Z');
       await Task.collection.insertOne({
-        user: userId,
+        user: new mongoose.Types.ObjectId(),
         title: 'Legacy Done Item',
         status: 'done',
         completedAt: null,
@@ -899,9 +885,9 @@ describe('Tasks API & Security (/api/tasks)', () => {
       expect(item?.completedAt?.toISOString()).toBe(dummyUpdatedAt.toISOString());
     });
 
-    it('should require authentication for GET /api/tasks/stats (401)', async () => {
+    it('allows anonymous access to GET /api/tasks/stats', async () => {
       const res = await request(app).get('/api/tasks/stats?tz=UTC&days=7');
-      expect(res.status).toBe(401);
+      expect(res.status).toBe(200);
     });
 
     it('should validate query parameters and return 400 for invalid tz, days, or unexpected params', async () => {
@@ -935,7 +921,7 @@ describe('Tasks API & Security (/api/tasks)', () => {
       expect(resExtra.status).toBe(400);
     });
 
-    it('should return all zeros (no NaN) on empty account', async () => {
+    it('should return all zeros (no NaN) on an empty workspace', async () => {
       const res = await request(app)
         .get('/api/tasks/stats?tz=UTC&days=7')
         .set('Cookie', [userACookie]);
@@ -1076,8 +1062,7 @@ describe('Tasks API & Security (/api/tasks)', () => {
 
     it('should group completions into the correct day in the specified timezone (23:30 IST boundary test)', async () => {
       await Task.deleteMany({});
-      const userRes = await request(app).get('/api/auth/me').set('Cookie', [userACookie]);
-      const userId = userRes.body.user.id;
+      const userId = workspaceIdFromCookie(userACookie);
 
       // 2026-10-04T18:00:00.000Z in UTC is 2026-10-04.
       // In Asia/Kolkata (+05:30), it is 2026-10-04 23:30:00 IST (Day is 2026-10-04).

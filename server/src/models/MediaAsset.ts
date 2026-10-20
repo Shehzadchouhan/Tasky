@@ -14,7 +14,7 @@ export interface IMediaAssetDocument extends IMediaAsset, Document {}
 
 const mediaAssetSchema = new Schema<IMediaAssetDocument>(
   {
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    user: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
     note: { type: Schema.Types.ObjectId, ref: 'Note', required: true, index: true },
     originalName: { type: String, required: true, maxlength: 200 },
     storedName: { type: String, required: true, unique: true, select: false },

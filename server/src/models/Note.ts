@@ -17,7 +17,7 @@ const noteSchema = new Schema<INoteDocument>(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Workspace',
       required: true,
       index: true,
     },

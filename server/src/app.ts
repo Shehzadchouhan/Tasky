@@ -3,11 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
-import authRoutes from './routes/auth.routes.js';
 import taskRoutes from './routes/task.routes.js';
 import assistantRoutes from './routes/assistant.routes.js';
 import noteRoutes from './routes/note.routes.js';
-import { authRateLimiter } from './middleware/rateLimiter.js';
+import { workspaceMiddleware } from './middleware/workspace.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -37,10 +36,9 @@ app.use(cookieParser());
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRateLimiter, authRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/assistant', assistantRoutes);
-app.use('/api/notes', noteRoutes);
+app.use('/api/tasks', workspaceMiddleware, taskRoutes);
+app.use('/api/assistant', workspaceMiddleware, assistantRoutes);
+app.use('/api/notes', workspaceMiddleware, noteRoutes);
 
 app.get('/', (_req: Request, res: Response) => {
   res.status(200).json({

@@ -19,11 +19,7 @@ export const createTask = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
-    const task = await createTaskRecord(req.user._id, req.body);
+    const task = await createTaskRecord(req.workspaceId, req.body);
     res.status(201).json({ task });
   } catch (error) {
     next(error);
@@ -36,14 +32,10 @@ export const getTasks = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
     const query = taskQuerySchema.parse(req.query);
 
     const filter: Record<string, any> = {
-      user: req.user._id,
+      user: req.workspaceId,
     };
 
     if (query.status) {
@@ -119,15 +111,11 @@ export const getTaskById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
     const { id } = taskIdParamSchema.parse(req.params);
 
     const task = await Task.findOne({
       _id: id,
-      user: req.user._id,
+      user: req.workspaceId,
     });
 
     if (!task) {
@@ -146,12 +134,8 @@ export const updateTask = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
     const { id } = taskIdParamSchema.parse(req.params);
-    const task = await updateTaskRecord(req.user._id, id, req.body);
+    const task = await updateTaskRecord(req.workspaceId, id, req.body);
     res.status(200).json({ task });
   } catch (error) {
     next(error);
@@ -164,15 +148,11 @@ export const deleteTask = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
     const { id } = taskIdParamSchema.parse(req.params);
 
     const task = await Task.findOneAndDelete({
       _id: id,
-      user: req.user._id,
+      user: req.workspaceId,
     });
 
     if (!task) {
@@ -193,11 +173,7 @@ export const reorderTasks = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
-    const userId = req.user._id;
+    const userId = req.workspaceId;
     const { status, orderedIds } = reorderTasksSchema.parse(req.body);
 
     if (orderedIds.length > 0) {
@@ -245,12 +221,8 @@ export const getTaskStats = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
     const { tz, days } = taskStatsQuerySchema.parse(req.query);
-    const userId = new mongoose.Types.ObjectId(req.user._id);
+    const userId = new mongoose.Types.ObjectId(req.workspaceId);
 
     // Calculate calendar dates for the last `days` in user's timezone
     const now = new Date();

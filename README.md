@@ -55,11 +55,13 @@ Whether you prefer a tactile Kanban board, structured list views, or freeform ri
 - **Smooth Theme Switcher:** Default dark mode featuring subtle warm ambient drift gradients, with instant light mode toggle and `localStorage` persistence.
 - **Accessibility First:** High contrast ratios, full keyboard navigation traps, ARIA dialog roles, and screen reader announcements.
 
-### 🔐 Security & Multi-Tenant Isolation
-- **Authentication:** JWT stored in secure `httpOnly`, `SameSite=strict` cookies with bcrypt password hashing.
-- **Strict Data Isolation:** Strict user isolation enforced at the database query level; users can never read, update, or reorder another user's tasks or notes.
+### 🔐 Private Browser Workspaces
+- **No sign-in or sign-up:** Taskly opens directly to the workspace without checking an account.
+- **Per-browser data isolation:** A signed, `httpOnly` workspace cookie scopes tasks, notes, and categories to the browser that created them.
+- **Browser-bound access:** Clearing browser cookies or switching browsers/devices starts a separate workspace; workspaces are not shared or recoverable through an account.
+- **Existing sessions:** A still-valid sign-in cookie is converted to a browser workspace on first use so its existing tasks and notes remain available.
 - **Robust Validation:** Comprehensive request schemas validated via **Zod**, preventing NoSQL injection, parameter pollution, and mass assignment attacks.
-- **Protection:** API rate limiters on sensitive endpoints (auth, media upload, note writes, AI actions).
+- **Protection:** API rate limiters on media uploads, note writes, and AI actions.
 
 ---
 
@@ -68,7 +70,7 @@ Whether you prefer a tactile Kanban board, structured list views, or freeform ri
 | Domain | Technologies |
 | :--- | :--- |
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS v4, TanStack Query (React Query), TipTap Editor, Recharts, @dnd-kit, Lucide Icons |
-| **Backend** | Node.js (ES Modules), Express, TypeScript, Mongoose, Zod, Multer, Helmet, Cookie-Parser, Bcrypt, JsonWebToken |
+| **Backend** | Node.js (ES Modules), Express, TypeScript, Mongoose, Zod, Multer, Helmet, Cookie-Parser, JsonWebToken |
 | **Database** | MongoDB |
 | **Testing** | Vitest, React Testing Library, JSDOM, Supertest, MongoDB Memory Server |
 | **Tools** | Oxlint, TSX |
@@ -119,7 +121,6 @@ MONGODB_URI=mongodb://localhost:27017/taskly
 CLIENT_URL=http://localhost:5173
 MEDIA_STORAGE_DIR=uploads
 JWT_SECRET=your_super_secret_jwt_key_here
-JWT_EXPIRES_IN=7d
 NODE_ENV=development
 
 # Optional: Google Gemini API Key for Taskly AI Assistant
@@ -177,27 +178,23 @@ npm test          # Run server API integration tests with Vitest & Supertest
 
 ## 📡 API Overview
 
-| Route | Method | Description | Auth Required |
+| Route | Method | Description | Sign-in Required |
 | :--- | :--- | :--- | :---: |
 | `/api/health` | `GET` | Health check & database connection status | No |
-| `/api/auth/register` | `POST` | Register a new user account | No |
-| `/api/auth/login` | `POST` | Authenticate and issue httpOnly JWT | No |
-| `/api/auth/logout` | `POST` | Invalidate cookie session | Yes |
-| `/api/auth/me` | `GET` | Get current authenticated user profile | Yes |
-| `/api/tasks` | `GET` | Paginated task list with filter & sort | Yes |
-| `/api/tasks` | `POST` | Create a new task | Yes |
-| `/api/tasks/:id` | `GET` | Get task details by ID | Yes |
-| `/api/tasks/:id` | `PATCH` | Update task details | Yes |
-| `/api/tasks/:id` | `DELETE` | Delete task | Yes |
-| `/api/tasks/reorder` | `POST` | Reorder tasks within/across Kanban columns | Yes |
-| `/api/tasks/stats` | `GET` | Retrieve task analytics & completion trends | Yes |
-| `/api/notes` | `GET` | Get list of note summaries | Yes |
-| `/api/notes` | `POST` | Create note | Yes |
-| `/api/notes/:id` | `GET` | Get full note content | Yes |
-| `/api/notes/:id` | `PATCH` | Update note with OCC baseVersion check | Yes |
-| `/api/notes/:id` | `DELETE` | Delete note | Yes |
-| `/api/notes/categories`| `GET/POST/PATCH` | Manage user-specific note categories | Yes |
-| `/api/assistant/chat` | `POST` | Interact with the Taskly AI Assistant | Yes |
+| `/api/tasks` | `GET` | Paginated task list with filter & sort | No |
+| `/api/tasks` | `POST` | Create a new task | No |
+| `/api/tasks/:id` | `GET` | Get task details by ID | No |
+| `/api/tasks/:id` | `PATCH` | Update task details | No |
+| `/api/tasks/:id` | `DELETE` | Delete task | No |
+| `/api/tasks/reorder` | `POST` | Reorder tasks within/across Kanban columns | No |
+| `/api/tasks/stats` | `GET` | Retrieve task analytics & completion trends | No |
+| `/api/notes` | `GET` | Get list of note summaries | No |
+| `/api/notes` | `POST` | Create note | No |
+| `/api/notes/:id` | `GET` | Get full note content | No |
+| `/api/notes/:id` | `PATCH` | Update note with OCC baseVersion check | No |
+| `/api/notes/:id` | `DELETE` | Delete note | No |
+| `/api/notes/categories`| `GET/POST/PATCH` | Manage browser-workspace note categories | No |
+| `/api/assistant/chat` | `POST` | Interact with the Taskly AI Assistant | No |
 
 ---
 
@@ -214,15 +211,14 @@ Tasky/
 │   │   ├── api/                # Typed API client & endpoints
 │   │   ├── components/
 │   │   │   ├── assistant/      # Taskly AI Assistant modal & voice input
-│   │   │   ├── auth/           # Route guards (ProtectedRoute, PublicRoute)
 │   │   │   ├── common/         # Button, Input, Select, Modal, Badge, Spinner
 │   │   │   ├── layout/         # AppLayout, Header, Navigation
 │   │   │   ├── notes/          # TipTap editor, toolbar, summaries, media
 │   │   │   ├── stats/          # KPI cards, Recharts trend bar & donut charts
 │   │   │   └── tasks/          # KanbanBoard, TaskCard, TaskControls, TaskModal
-│   │   ├── context/            # AuthContext, ThemeContext, ToastContext
-│   │   ├── hooks/              # Custom hooks (useTasks, useNotes, useAuth, etc.)
-│   │   ├── pages/              # DashboardPage, LoginPage, RegisterPage, NotFound
+│   │   ├── context/            # ThemeContext, ToastContext
+│   │   ├── hooks/              # Custom hooks (useTasks, useNotes, etc.)
+│   │   ├── pages/              # DashboardPage, NotFound
 │   │   ├── test/               # Vitest component & unit tests
 │   │   ├── types/              # TypeScript interface definitions
 │   │   ├── index.css           # Tailwind CSS v4 config & theme definitions
@@ -232,9 +228,9 @@ Tasky/
 ├── server/                     # Backend API (Node.js + Express)
 │   ├── src/
 │   │   ├── config/             # Database connection & env setup
-│   │   ├── controllers/        # Route handlers (auth, tasks, notes, assistant)
-│   │   ├── middleware/         # Auth, validation, rate limiting, error handling
-│   │   ├── models/             # Mongoose schemas (User, Task, Note, MediaAsset)
+│   │   ├── controllers/        # Route handlers (tasks, notes, assistant)
+│   │   ├── middleware/         # Workspace, validation, rate limiting, error handling
+│   │   ├── models/             # Mongoose schemas (Workspace, Task, Note, MediaAsset)
 │   │   ├── routes/             # Express API routes
 │   │   ├── services/           # Business logic & AI assistant service
 │   │   ├── validation/         # Zod schemas

@@ -1,10 +1,10 @@
-import { IUserDocument } from '../models/User.js';
+import { Types } from 'mongoose';
 import 'multer';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: IUserDocument;
+      workspaceId: Types.ObjectId;
       file?: Express.Multer.File;
       files?: { [fieldname: string]: Express.Multer.File[] } | Express.Multer.File[];
     }

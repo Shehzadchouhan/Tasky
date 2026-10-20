@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
-import jwt from 'jsonwebtoken';
 import { AppError } from '../errors/AppError.js';
 import { MulterError } from 'multer';
-
-const { JsonWebTokenError, TokenExpiredError } = jwt;
 
 interface MongoDuplicateKeyError extends Error {
   code: number;
@@ -59,14 +56,6 @@ export const errorHandler: ErrorRequestHandler = (
   if ((err as MongoDuplicateKeyError).code === 11000) {
     res.status(409).json({
       error: 'Email already in use',
-    });
-    return;
-  }
-
-  // JWT Errors
-  if (err instanceof JsonWebTokenError || err instanceof TokenExpiredError) {
-    res.status(401).json({
-      error: 'Invalid or expired token',
     });
     return;
   }

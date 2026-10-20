@@ -8,19 +8,14 @@ import {
   AI_QUOTA_MESSAGE,
   GENERIC_BUSY_MESSAGE,
 } from '../src/controllers/assistant.controller.js';
+import { createWorkspaceCookie } from './workspace.js';
 
 describe('Taskly assistant fast task actions', () => {
   let cookie: string;
 
   beforeEach(async () => {
     resetAssistantCircuitAndCaps();
-    const register = await request(app).post('/api/auth/register').send({
-      name: 'Assistant User',
-      email: `assistant-${Date.now()}-${Math.random()}@example.com`,
-      password: 'password123',
-    });
-    const rawCookie = register.headers['set-cookie'];
-    cookie = Array.isArray(rawCookie) ? rawCookie[0] : rawCookie || '';
+    cookie = await createWorkspaceCookie();
   });
 
   afterEach(() => {
@@ -200,14 +195,7 @@ describe('Taskly assistant fast task actions', () => {
 
     const taskAId = created.body.task.id;
 
-    // Register User B
-    const userBRes = await request(app).post('/api/auth/register').send({
-      name: 'User B',
-      email: 'userb@example.com',
-      password: 'password123',
-    });
-    const rawCookieB = userBRes.headers['set-cookie'];
-    const cookieB = Array.isArray(rawCookieB) ? rawCookieB[0] : rawCookieB || '';
+    const cookieB = await createWorkspaceCookie();
 
     // User B tries to delete User A's task
     const deleteRes = await request(app)
@@ -339,14 +327,8 @@ describe('Taskly assistant fast task actions', () => {
       expect(taskLondon?.dueDate?.toISOString().slice(0, 10)).toBe('2026-10-07');
     });
 
-    const getCookieForTime = async (email: string) => {
-      const reg = await request(app).post('/api/auth/register').send({
-        name: 'Time User',
-        email,
-        password: 'password123',
-      });
-      const raw = reg.headers['set-cookie'];
-      return Array.isArray(raw) ? raw[0] : raw || '';
+    const getCookieForTime = async (_email: string) => {
+      return createWorkspaceCookie();
     };
 
     it('31 Oct 2026 22:00 America/New_York "tomorrow" gives 2026-11-01', async () => {

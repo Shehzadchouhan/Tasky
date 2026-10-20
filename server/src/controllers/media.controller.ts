@@ -40,11 +40,10 @@ export const uploadNoteMedia = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) throw new AppError('Authentication required', 401);
     if (!req.file) throw new AppError('Choose an image, video, or audio file to upload.', 400);
 
     const { id: noteId } = noteIdParamSchema.parse({ id: req.body.noteId });
-    const noteExists = await Note.exists({ _id: noteId, user: req.user._id });
+    const noteExists = await Note.exists({ _id: noteId, user: req.workspaceId });
     if (!noteExists) throw new AppError('Note not found', 404);
 
     const detectedType = await fileTypeFromBuffer(req.file.buffer);
@@ -63,7 +62,7 @@ export const uploadNoteMedia = async (
     try {
       await MediaAsset.create({
         _id: assetId,
-        user: req.user._id,
+        user: req.workspaceId,
         note: noteId,
         originalName,
         storedName,
@@ -94,9 +93,8 @@ export const getNoteMedia = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) throw new AppError('Authentication required', 401);
     const { id } = noteIdParamSchema.parse(req.params);
-    const asset = await MediaAsset.findOne({ _id: id, user: req.user._id })
+    const asset = await MediaAsset.findOne({ _id: id, user: req.workspaceId })
       .select('+storedName')
       .lean();
     if (!asset) throw new AppError('Media not found', 404);

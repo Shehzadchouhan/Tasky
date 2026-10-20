@@ -2,9 +2,9 @@ import 'dotenv/config';
 import app from './app.js';
 import { connectDB } from './config/db.js';
 
-// Fail fast on startup in production if JWT_SECRET is missing
+// Fail fast on startup in production because workspace cookies must be signed.
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  console.error('[Server] FATAL: JWT_SECRET must be set in production');
+  console.error('[Server] FATAL: JWT_SECRET must be set in production to sign workspace cookies');
   process.exit(1);
 }
 

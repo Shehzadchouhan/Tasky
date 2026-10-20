@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { Note } from '../models/Note.js';
-import { User } from '../models/User.js';
+import { Workspace } from '../models/Workspace.js';
 import {
   createNoteSchema,
   updateNoteSchema,
@@ -15,17 +16,23 @@ import { AppError } from '../errors/AppError.js';
 import { deleteNoteMediaFiles } from './media.controller.js';
 import { MediaAsset } from '../models/MediaAsset.js';
 
+const getWorkspaceCategories = async (workspaceId: mongoose.Types.ObjectId): Promise<string[]> => {
+  const workspace = await Workspace.findById(workspaceId).select('noteCategories').lean();
+  if (workspace) return workspace.noteCategories || [];
+
+  const legacyUser = await mongoose.connection
+    .collection('users')
+    .findOne<{ noteCategories?: string[] }>({ _id: workspaceId }, { projection: { noteCategories: 1 } });
+  return legacyUser?.noteCategories || [];
+};
+
 export const createNote = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
-    const noteCount = await Note.countDocuments({ user: req.user._id });
+    const noteCount = await Note.countDocuments({ user: req.workspaceId });
     if (noteCount >= 500) {
       throw new AppError('Note limit reached. Maximum of 500 notes allowed.', 400);
     }
@@ -36,7 +43,7 @@ export const createNote = async (
     const title = parsed.title !== undefined && parsed.title.length > 0 ? parsed.title : 'Untitled';
 
     const note = await Note.create({
-      user: req.user._id,
+      user: req.workspaceId,
       title,
       category: parsed.category || '',
       content,
@@ -56,14 +63,10 @@ export const getNotes = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
     const query = noteQuerySchema.parse(req.query);
 
     const filter: Record<string, any> = {
-      user: req.user._id,
+      user: req.workspaceId,
     };
 
     if (query.q && query.q.trim()) {
@@ -121,15 +124,11 @@ export const getNoteById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
     const { id } = noteIdParamSchema.parse(req.params);
 
     const note = await Note.findOne({
       _id: id,
-      user: req.user._id,
+      user: req.workspaceId,
     });
 
     if (!note) {
@@ -148,10 +147,6 @@ export const updateNote = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
     const { id } = noteIdParamSchema.parse(req.params);
     const { title, category, content, baseVersion } = updateNoteSchema.parse(req.body);
 
@@ -160,7 +155,7 @@ export const updateNote = async (
       if (referencedMedia.length > 0) {
         const attachedMedia = await MediaAsset.find({
           _id: { $in: referencedMedia.map((item) => item.id) },
-          user: req.user._id,
+          user: req.workspaceId,
           note: id,
         }).select('mimeType').lean();
         if (attachedMedia.length !== referencedMedia.length) {
@@ -188,13 +183,13 @@ export const updateNote = async (
     }
 
     const updatedNote = await Note.findOneAndUpdate(
-      { _id: id, user: req.user._id, version: baseVersion },
+      { _id: id, user: req.workspaceId, version: baseVersion },
       { ...updateFields, $inc: { version: 1 } },
       { new: true, runValidators: true }
     );
 
     if (!updatedNote) {
-      const existingNote = await Note.findOne({ _id: id, user: req.user._id }).select('version');
+      const existingNote = await Note.findOne({ _id: id, user: req.workspaceId }).select('version');
       if (existingNote) {
         res.status(409).json({
           error: 'Note version conflict',
@@ -218,8 +213,7 @@ export const getNoteCategories = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) throw new AppError('Authentication required', 401);
-    res.status(200).json({ categories: req.user.noteCategories || [] });
+    res.status(200).json({ categories: await getWorkspaceCategories(req.workspaceId) });
   } catch (error) {
     next(error);
   }
@@ -231,22 +225,21 @@ export const createNoteCategory = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) throw new AppError('Authentication required', 401);
     const { name } = createNoteCategorySchema.parse(req.body);
-    const categories = req.user.noteCategories || [];
+    const categories = await getWorkspaceCategories(req.workspaceId);
 
     if (categories.some((category) => category.toLocaleLowerCase() === name.toLocaleLowerCase())) {
       throw new AppError('A category with this name already exists', 409);
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { $addToSet: { noteCategories: name } },
-      { new: true, runValidators: true }
+    const updatedWorkspace = await Workspace.findByIdAndUpdate(
+      req.workspaceId,
+      { $addToSet: { noteCategories: { $each: [...categories, name] } } },
+      { new: true, runValidators: true, upsert: true }
     ).select('noteCategories');
 
-    if (!user) throw new AppError('User not found', 404);
-    res.status(201).json({ categories: user.noteCategories });
+    if (!updatedWorkspace) throw new AppError('Workspace could not be created', 500);
+    res.status(201).json({ categories: updatedWorkspace.noteCategories });
   } catch (error) {
     next(error);
   }
@@ -258,9 +251,8 @@ export const renameNoteCategory = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) throw new AppError('Authentication required', 401);
     const { oldName, name } = renameNoteCategorySchema.parse(req.body);
-    const categories = req.user.noteCategories || [];
+    const categories = await getWorkspaceCategories(req.workspaceId);
     const existingName = categories.find(
       (category) => category.toLocaleLowerCase() === oldName.toLocaleLowerCase()
     );
@@ -279,21 +271,21 @@ export const renameNoteCategory = async (
     const renamedCategories = categories.map((category) =>
       category === existingName ? name : category
     );
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
+    const updatedWorkspace = await Workspace.findByIdAndUpdate(
+      req.workspaceId,
       { $set: { noteCategories: renamedCategories } },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true, upsert: true }
     ).select('noteCategories');
-    if (!user) throw new AppError('User not found', 404);
+    if (!updatedWorkspace) throw new AppError('Workspace could not be created', 500);
 
     if (existingName !== name) {
       await Note.updateMany(
-        { user: req.user._id, category: existingName },
+        { user: req.workspaceId, category: existingName },
         { $set: { category: name }, $inc: { version: 1 } }
       );
     }
 
-    res.status(200).json({ categories: user.noteCategories });
+    res.status(200).json({ categories: updatedWorkspace.noteCategories });
   } catch (error) {
     next(error);
   }
@@ -305,15 +297,11 @@ export const deleteNote = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new AppError('Authentication required', 401);
-    }
-
     const { id } = noteIdParamSchema.parse(req.params);
 
     const deletedNote = await Note.findOneAndDelete({
       _id: id,
-      user: req.user._id,
+      user: req.workspaceId,
     });
     if (deletedNote) {
       await deleteNoteMediaFiles(id);

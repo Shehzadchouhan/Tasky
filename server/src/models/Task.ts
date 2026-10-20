@@ -32,7 +32,7 @@ const taskSchema = new Schema<ITaskDocument>(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Workspace',
       required: true,
       index: true,
     },

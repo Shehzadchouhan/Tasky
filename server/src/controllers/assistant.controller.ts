@@ -855,12 +855,11 @@ export const chatWithAssistant = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) throw new AppError('Authentication required', 401);
     const { message, history, timezone } = chatRequestSchema.parse(req.body);
     const todayInfo = getZonedTodayParts(new Date(), timezone);
 
     // Fast status listing or completion intent
-    const fastReply = await handleFastTaskIntent(message, req.user._id, timezone, todayInfo.dateStr);
+    const fastReply = await handleFastTaskIntent(message, req.workspaceId, timezone, todayInfo.dateStr);
     if (fastReply) {
       res.status(200).json(fastReply);
       return;
@@ -868,12 +867,12 @@ export const chatWithAssistant = async (
 
     // Deterministic task add (runs first for exact commands or when AI is unavailable)
     const isExact = EXACT_COMMAND_REGEX.test(message);
-    const aiUnavailable = isAiUnavailable(req.user._id);
+    const aiUnavailable = isAiUnavailable(req.workspaceId);
 
     if (isExact || aiUnavailable) {
       const fastAddResult = await handleFastTaskAdd(
         message,
-        req.user._id,
+        req.workspaceId,
         timezone,
         todayInfo.dateStr,
         aiUnavailable,
@@ -895,7 +894,7 @@ export const chatWithAssistant = async (
     let callsMade = 0;
 
     for (;;) {
-      const data = await requestGemini(input, todayInfo, timezone, req.user._id);
+      const data = await requestGemini(input, todayInfo, timezone, req.workspaceId);
       const steps = data.steps ?? [];
       const functionCalls = steps.filter((step) => step.type === 'function_call');
       if (!functionCalls.length) {
@@ -930,7 +929,7 @@ export const chatWithAssistant = async (
         if (!call.name || !call.id) {
           throw new AppError(GENERIC_BUSY_MESSAGE, 503, undefined, 'AI_BUSY');
         }
-        const action = await executeTool(call.name, call.arguments ?? {}, req.user._id, {
+        const action = await executeTool(call.name, call.arguments ?? {}, req.workspaceId, {
           originalMessage: message,
           timezone,
           todayStr: todayInfo.dateStr,
@@ -958,9 +957,8 @@ export const confirmTaskDeletion = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user) throw new AppError('Authentication required', 401);
     const { taskId } = confirmDeleteSchema.parse(req.body);
-    await Task.findOneAndDelete({ _id: taskId, user: req.user._id });
+    await Task.findOneAndDelete({ _id: taskId, user: req.workspaceId });
     res.status(200).json({ ok: true });
   } catch (error) {
     next(error);

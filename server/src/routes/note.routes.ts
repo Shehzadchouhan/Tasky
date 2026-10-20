@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
 import { notesWriteRateLimiter } from '../middleware/rateLimiter.js';
 import { noteMediaUpload } from '../middleware/noteMediaUpload.js';
 import { getNoteMedia, uploadNoteMedia } from '../controllers/media.controller.js';
@@ -15,9 +14,6 @@ import {
 } from '../controllers/note.controller.js';
 
 const router = Router();
-
-// Protect all note routes with authentication
-router.use(requireAuth);
 
 // Routes
 router.post('/', notesWriteRateLimiter, createNote);

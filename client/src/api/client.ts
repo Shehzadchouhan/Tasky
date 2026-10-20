@@ -14,13 +14,6 @@ export class ApiClientError extends Error {
   }
 }
 
-type UnauthorizedHandler = (currentPath: string) => void;
-let unauthorizedHandler: UnauthorizedHandler | null = null;
-
-export const setUnauthorizedHandler = (handler: UnauthorizedHandler | null) => {
-  unauthorizedHandler = handler;
-};
-
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export function apiUrlFor(endpoint: string): string {
@@ -31,15 +24,11 @@ export function apiUrlFor(endpoint: string): string {
   return new URL(url, origin).toString();
 }
 
-export interface RequestOptions extends RequestInit {
-  skipAuthRedirect?: boolean;
-}
-
 export async function apiClient<T>(
   endpoint: string,
-  options: RequestOptions = {}
+  options: RequestInit = {}
 ): Promise<T> {
-  const { skipAuthRedirect = false, headers, ...restOptions } = options;
+  const { headers, ...restOptions } = options;
 
   const url = apiUrlFor(endpoint);
 
@@ -84,15 +73,6 @@ export async function apiClient<T>(
     const errorMessage = errorData.error || response.statusText || 'An unexpected error occurred';
     const details = errorData.details;
     const code = errorData.code;
-
-    // Trigger unauthorized callback on 401 if not an exempted check (like initial /me)
-    const isMeEndpoint = endpoint.includes('/auth/me');
-    if (response.status === 401 && !skipAuthRedirect && !isMeEndpoint) {
-      if (unauthorizedHandler) {
-        const currentPath = window.location.pathname + window.location.search;
-        unauthorizedHandler(currentPath);
-      }
-    }
 
     throw new ApiClientError(errorMessage, response.status, details, code);
   }

@@ -1,22 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import app from '../src/app.js';
 import { Note } from '../src/models/Note.js';
+import { createWorkspaceCookie } from './workspace.js';
 
 describe('Notes API & Security (/api/notes)', () => {
   let userACookie: string;
   let userBCookie: string;
-
-  const helperCreateUser = async (name: string, email: string) => {
-    const res = await request(app).post('/api/auth/register').send({
-      name,
-      email,
-      password: 'password123',
-    });
-    const rawCookie = res.headers['set-cookie'];
-    const cookie = Array.isArray(rawCookie) ? rawCookie[0] : rawCookie || '';
-    return { user: res.body.user, cookie };
-  };
 
   const sampleValidDoc = {
     type: 'doc',
@@ -29,37 +21,86 @@ describe('Notes API & Security (/api/notes)', () => {
   };
 
   beforeEach(async () => {
-    const userA = await helperCreateUser('User A', 'user_a@example.com');
-    userACookie = userA.cookie;
-
-    const userB = await helperCreateUser('User B', 'user_b@example.com');
-    userBCookie = userB.cookie;
+    userACookie = await createWorkspaceCookie();
+    userBCookie = await createWorkspaceCookie();
   });
 
-  describe('Authentication Enforcement', () => {
-    it('should reject unauthenticated requests with 401', async () => {
+  describe('Anonymous workspace access', () => {
+    it('opens notes without sign-in and issues a workspace cookie', async () => {
       const getRes = await request(app).get('/api/notes');
-      expect(getRes.status).toBe(401);
+      expect(getRes.status).toBe(200);
+      expect(getRes.headers['set-cookie']?.[0]).toContain('taskly_workspace=');
 
       const postRes = await request(app).post('/api/notes').send({ title: 'Note' });
-      expect(postRes.status).toBe(401);
+      expect(postRes.status).toBe(201);
 
       const getByIdRes = await request(app).get('/api/notes/507f1f77bcf86cd799439011');
-      expect(getByIdRes.status).toBe(401);
+      expect(getByIdRes.status).toBe(404);
 
       const patchRes = await request(app)
         .patch('/api/notes/507f1f77bcf86cd799439011')
         .send({ title: 'Updated', baseVersion: 1 });
-      expect(patchRes.status).toBe(401);
+      expect(patchRes.status).toBe(404);
 
       const deleteRes = await request(app).delete('/api/notes/507f1f77bcf86cd799439011');
-      expect(deleteRes.status).toBe(401);
+      expect(deleteRes.status).toBe(200);
 
-      expect((await request(app).get('/api/notes/categories')).status).toBe(401);
-      expect((await request(app).get('/api/notes/media/507f1f77bcf86cd799439011')).status).toBe(401);
+      expect((await request(app).get('/api/notes/categories')).status).toBe(200);
+      expect((await request(app).get('/api/notes/media/507f1f77bcf86cd799439011')).status).toBe(404);
       expect(
         (await request(app).post('/api/notes/categories').send({ name: 'Work' })).status
-      ).toBe(401);
+      ).toBe(201);
+      expect((await request(app).post('/api/auth/register')).status).toBe(404);
+    });
+
+    it('keeps browser workspaces separate and preserves access through the workspace cookie', async () => {
+      const workspaceA = await createWorkspaceCookie();
+      const workspaceB = await createWorkspaceCookie();
+      const created = await request(app)
+        .post('/api/notes')
+        .set('Cookie', [workspaceA])
+        .send({ title: 'Private browser note' });
+
+      const listInWorkspaceB = await request(app)
+        .get('/api/notes')
+        .set('Cookie', [workspaceB]);
+      expect(listInWorkspaceB.body.total).toBe(0);
+
+      const noteInWorkspaceA = await request(app)
+        .get(`/api/notes/${created.body.note.id}`)
+        .set('Cookie', [workspaceA]);
+      expect(noteInWorkspaceA.status).toBe(200);
+      expect(noteInWorkspaceA.body.note.title).toBe('Private browser note');
+    });
+
+    it('moves a valid existing sign-in session to a browser workspace without losing notes', async () => {
+      const userId = new mongoose.Types.ObjectId().toString();
+      const note = await Note.create({
+        user: userId,
+        title: 'Existing account note',
+        content: { type: 'doc', content: [] },
+        plainText: '',
+      });
+      const secret = process.env.JWT_SECRET;
+      if (!secret) throw new Error('JWT_SECRET must be available in the test environment.');
+      const legacyToken = jwt.sign({ userId }, secret, { expiresIn: '7d' });
+
+      const migrated = await request(app)
+        .get('/api/notes')
+        .set('Cookie', [`token=${legacyToken}`]);
+      expect(migrated.body.total).toBe(1);
+      const rawSetCookies = migrated.headers['set-cookie'];
+      const setCookies = Array.isArray(rawSetCookies) ? rawSetCookies : rawSetCookies ? [rawSetCookies] : [];
+      const workspaceCookie = setCookies
+        .find((cookie: string) => cookie.startsWith('taskly_workspace='))
+        ?.split(';', 1)[0];
+      if (!workspaceCookie) throw new Error('The API did not issue a workspace cookie.');
+
+      const existingNote = await request(app)
+        .get(`/api/notes/${note.id}`)
+        .set('Cookie', [workspaceCookie]);
+      expect(existingNote.status).toBe(200);
+      expect(existingNote.body.note.title).toBe('Existing account note');
     });
   });
 
@@ -141,7 +182,7 @@ describe('Notes API & Security (/api/notes)', () => {
       expect(deletedMediaResponse.status).toBe(404);
     });
 
-    it('rejects unauthenticated uploads, files with forged types, and uploads for another user’s note', async () => {
+    it('rejects files with forged types and uploads for another browser workspace’s note', async () => {
       const privateNoteResponse = await request(app)
         .post('/api/notes')
         .set('Cookie', [userBCookie])
@@ -158,7 +199,7 @@ describe('Notes API & Security (/api/notes)', () => {
         .post('/api/notes/media')
         .field('noteId', ownNoteId)
         .attach('file', fakePng, { filename: 'fake.png', contentType: 'image/png' });
-      expect(unauthenticatedResponse.status).toBe(401);
+      expect(unauthenticatedResponse.status).toBe(404);
 
       const forgedFileResponse = await request(app)
         .post('/api/notes/media')
@@ -833,10 +874,9 @@ describe('Notes API & Security (/api/notes)', () => {
     });
   });
 
-  describe('Write Rate Limiting (120 writes per minute per user)', () => {
-    it('should enforce write rate limiting and return 429 on the 121st write request for a user', async () => {
-      const userRate = await helperCreateUser('Rate User', 'rate_user@example.com');
-      const rateCookie = userRate.cookie;
+  describe('Write Rate Limiting (120 writes per minute per workspace)', () => {
+    it('should enforce write rate limiting and return 429 on the 121st write request for a workspace', async () => {
+      const rateCookie = await createWorkspaceCookie();
 
       // Create initial note
       const initRes = await request(app)
